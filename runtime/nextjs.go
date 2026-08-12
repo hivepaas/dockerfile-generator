@@ -150,7 +150,8 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
+ARG APT_EXTRA_PKGS=
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
@@ -209,7 +210,8 @@ RUN {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
 FROM base AS runner
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
+ARG APT_EXTRA_PKGS=
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app

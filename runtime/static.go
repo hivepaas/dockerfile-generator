@@ -74,7 +74,8 @@ var staticTemplate = strings.TrimSpace(`
 ARG VERSION=2
 ARG BUILDER=docker.io/joseluisq/static-web-server
 FROM ${BUILDER}:${VERSION}-debian
-RUN apt-get update && apt-get install -y --no-install-recommends wget && apt-get clean && rm -f /var/lib/apt/lists/*_*
+ARG APT_EXTRA_PKGS=
+RUN apt-get update && apt-get install -y --no-install-recommends wget ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 COPY . .
 
 ENV PORT=8080

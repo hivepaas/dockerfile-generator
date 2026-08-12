@@ -132,7 +132,8 @@ RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -t
 
 FROM alpine:latest
 WORKDIR /app
-RUN apk add --no-cache ca-certificates tzdata wget
+ARG APK_EXTRA_PKGS=
+RUN apk add --no-cache ca-certificates tzdata wget ${APK_EXTRA_PKGS}
 RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
 RUN chown -R nonroot:nonroot /app
 

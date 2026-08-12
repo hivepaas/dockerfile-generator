@@ -147,6 +147,7 @@ Read on to see runtime-specific examples and how to configure the generated Dock
   - `INSTALL_CMD` - The command to install dependencies (default: `bun install`)
   - `BUILD_CMD` - The command to build the project (default: detected from `package.json`)
   - `START_CMD` - The command to start the project (default: detected from `package.json`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Build Command
 
@@ -183,6 +184,7 @@ Detected in order of precedence:
   - `DENO_VERSION` - The version of Deno to install (default: `latest`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from `deno.jsonc` and source code)
   - `START_CMD` - The command to start the project (default: detected from `deno.jsonc` and source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 
@@ -219,6 +221,7 @@ Detected in order of precedence:
   - `ELIXIR_VERSION` - The version of Elixir to install (default: `1.17`)
   - `OTP_VERSION` - The version of Erlang to install (default: `26.2.5`)
   - `BIN_NAME` - The name of the release binary (default: detected via app name in `mix.exs`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Start Command
 `/app/bin/{BIN_NAME} start`
@@ -248,6 +251,7 @@ Detected in order of precedence:
   - `CGO_ENABLED` - Enable CGO for the build (default: `0`)
   - `GOPROXY` - The Go module proxy to use (default: `direct`)
   - `PACKAGE` - The package to compile e.g. `./cmd/http` (default: detected via `cmd` directory or `main.go`)
+  - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
 
 #### Package Detection
   - Find the directory in `cmd` with a `.go` file
@@ -286,6 +290,7 @@ Maven version:
   - `JAVA_OPTS` - The Java options to pass to the JVM (default: `-Xmx512m -Xms256m`)
   - `BUILD_CMD` - The command to build the project (default: best guess via source code)
   - `START_CMD` - The command to start the project (default: detected via source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 - If Maven: `mvn install`
@@ -320,6 +325,7 @@ Maven version:
 
 #### Build Args
   - `NODE_VERSION` - The version of Node.js to install (default: `lts`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 ```sh
@@ -368,6 +374,7 @@ fi
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 - If Yarn: `yarn --frozen-lockfile`
@@ -406,6 +413,7 @@ In order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected via source code)
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 - If Composer: `composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`
@@ -452,6 +460,7 @@ In order of precedence:
   - `PYTHON_VERSION` - The version of Python to install (default: `3.12`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 - If Poetry: `pip install poetry && poetry install --no-dev --no-ansi --no-root`
@@ -494,6 +503,7 @@ In order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Install Command
 - `bundle install`
@@ -524,6 +534,7 @@ In order of precedence:
   - `TARGETOS` - The target OS for the build (default: `linux`)
   - `TARGETARCH` - The target architecture for the build (default: `amd64`)
   - `BIN_NAME` - The name of the release binary (default: detected via `Cargo.toml`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 #### Build Command
 ```sh 
@@ -554,6 +565,7 @@ It is nearly as fast as Nginx and Lighttpd, but is [easily configurable with env
 #### Build Args
   - `VERSION` - The version of the static web server to install (default: `2`)
   - `SERVER_ROOT` - The root directory of the server (default: detected from source code)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 ---
 
