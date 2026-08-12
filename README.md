@@ -45,10 +45,10 @@
 
 ## Installation
 
-### cURL
+### CLI Tool
 
 ```sh
-curl -fsSL https://flexstack.com/install/dockerfile-gen | bash
+go install github.com/hivepaas/dockerfile-generator/cmd/dockerfile-gen@latest
 ```
 
 ### Go Package
@@ -590,12 +590,6 @@ It is nearly as fast as Nginx and Lighttpd, but is [easily configurable with env
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 ---
-
-## Used By
-
-- [FlexStack](https://flexstack.com) - A platform that simplifies the deployment of containerized applications to AWS. 
-  FlexStack uses this tool to automatically detect the runtime and framework used by your project, so you can just bring your code and deploy it with confidence.
-- *Your project here* - If you're using this tool in your project, let us know! We'd love to feature you here.
 
 ## Contributing
 
