@@ -1,0 +1,53 @@
+name: Pull request
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  vet:
+    name: Vet
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.head_ref }}-vet
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Setup asdf
+        uses: asdf-vm/actions/install@v3
+      - name: Install dependencies
+        run: go mod download
+      - name: Add asdf shims to PATH
+        run: |
+          echo "${HOME}/.asdf/shims" >> $GITHUB_PATH
+      - name: Lint
+        run: go vet ./...
+      - name: Run tests
+        run: go test -v ./...
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v3.3.0
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: |
+            ghcr.io/flexstack/dockerfile-gen
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
