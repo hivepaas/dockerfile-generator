@@ -23,6 +23,7 @@
 
 - [Bun](#bun)
 - [C# / .NET](#c--net)
+- [Dart](#dart)
 - [Deno](#deno)
 - [Elixir](#elixir)
 - [Go](#go)
@@ -37,7 +38,6 @@
 
 ### Additional runtimes we'd like to support
 
-- Dart
 - C++
 - Scala
 - Zig
@@ -198,6 +198,38 @@ Detected in order of precedence:
 
 #### Start Command
 `dotnet {DLL_NAME}.dll`
+
+---
+
+### Dart
+
+[Dart](https://dart.dev/) is an approachable, portable, and productive language for high-quality apps on any platform.
+
+#### Detected Files
+  - `pubspec.yaml`
+  - `pubspec.yml`
+
+#### Version Detection
+  - `.tool-versions` - `dart {VERSION}`
+  - `.mise.toml` - `dart = "{VERSION}"`
+  - `pubspec.yaml` - `sdk: '{VERSION}'`
+
+#### Runtime Image
+`debian:stable-slim`
+
+#### Build Args
+  - `DART_VERSION` - The version of Dart to install (default: `stable`)
+  - `INSTALL_CMD` - The command to install dependencies (default: `dart pub get`)
+  - `BUILD_CMD` - The command to compile the executable (default: `dart compile exe {MAIN_FILE} -o /app/bin/server`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/debian:stable-slim`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
+
+#### Build Command
+`dart compile exe {MAIN_FILE} -o /app/bin/server`
+
+#### Start Command
+`["/app/bin/server"]`
 
 ---
 

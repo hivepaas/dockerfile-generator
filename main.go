@@ -75,6 +75,7 @@ func (a *Dockerfile) ListRuntimes() []runtime.Runtime {
 		&runtime.Bun{Log: a.log},
 		&runtime.Node{Log: a.log},
 		&runtime.DotNet{Log: a.log},
+		&runtime.Dart{Log: a.log},
 		&runtime.Static{Log: a.log},
 	}
 }

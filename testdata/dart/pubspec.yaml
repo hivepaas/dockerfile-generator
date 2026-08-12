@@ -1,0 +1,10 @@
+name: my_dart_app
+description: An awesome Dart server app.
+version: 1.0.0
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
