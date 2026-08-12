@@ -24,5 +24,6 @@ const (
 	RuntimeNameBun    RuntimeName = "Bun"
 	RuntimeNameDeno   RuntimeName = "Deno"
 	RuntimeNameNode   RuntimeName = "Node"
+	RuntimeNameDotNet RuntimeName = "DotNet"
 	RuntimeNameStatic RuntimeName = "Static"
 )

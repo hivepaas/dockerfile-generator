@@ -22,6 +22,7 @@
 ## Supported Runtimes
 
 - [Bun](#bun)
+- [C# / .NET](#c--net)
 - [Deno](#deno)
 - [Elixir](#elixir)
 - [Go](#go)
@@ -36,7 +37,7 @@
 
 ### Additional runtimes we'd like to support
 
-- C#/.NET
+- Dart
 - C++
 - Scala
 - Zig
@@ -161,6 +162,42 @@ Detected in order of precedence:
 Detected in order of precedence:
   - `package.json` scripts: `"serve", "start:prod", "start:production", "start-prod", "start-production", "preview", "start"`
   - `package.json` main/module file: `bun run ${mainFile}`
+
+---
+
+### C# / .NET
+
+[.NET](https://dotnet.microsoft.com/) is a free, cross-platform, open-source developer platform for building many different types of applications.
+
+#### Detected Files
+  - `*.csproj`, `*.fsproj`, `*.vbproj`
+  - `*.sln`
+  - `global.json`
+  - `Directory.Build.props`
+
+#### Version Detection
+  - `.tool-versions` - `dotnet {VERSION}` or `dotnet-core {VERSION}`
+  - `.mise.toml` - `dotnet = "{VERSION}"`
+  - `global.json` - `"sdk": { "version": "{VERSION}" }`
+  - Project file: `<TargetFramework>net{VERSION}</TargetFramework>`
+
+#### Runtime Image
+`mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-alpine`
+
+#### Build Args
+  - `DOTNET_VERSION` - The version of the .NET SDK / Runtime (default: `8.0`)
+  - `RESTORE_CMD` - The command to restore NuGet packages (default: `dotnet restore`)
+  - `BUILD_CMD` - The command to publish the project (default: `dotnet publish -c Release -o /app/publish`)
+  - `START_CMD` - The command to start the application (default: `dotnet {DLL_NAME}.dll`)
+  - `RUNNER` - The base runtime image (default: `mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-alpine`)
+  - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
+
+#### Build Command
+`dotnet publish -c Release -o /app/publish`
+
+#### Start Command
+`dotnet {DLL_NAME}.dll`
 
 ---
 
