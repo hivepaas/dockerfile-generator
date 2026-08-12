@@ -36,13 +36,7 @@
 - [Ruby](#ruby)
 - [Rust](#rust)
 - [Static](#static-html-css-js) (HTML, CSS, JS)
-
-### Additional runtimes we'd like to support
-
-- Scala
-- Zig
-
-[Consider contributing](CONTRIBUTING.md) to add support for these or any other runtimes!
+- [Zig](#zig)
 
 ## Installation
 
@@ -666,6 +660,38 @@ if [ "${TARGETARCH}" = "amd64" ]; then cargo zigbuild --release --target x86_64-
 #### Start Command
 Determined by the binary name in the `Cargo.toml` file
 - `["/app/app"]`
+
+---
+
+### Zig
+
+[Zig](https://ziglang.org/) is a general-purpose programming language and toolchain for maintaining robust, optimal, and reusable software.
+
+#### Detected Files
+  - `build.zig`
+  - `build.zig.zon`
+  - `src/main.zig`, `main.zig`
+
+#### Version Detection
+  - `.tool-versions` - `zig {VERSION}`
+  - `.mise.toml` - `zig = "{VERSION}"`
+  - `build.zig.zon` - `.minimum_zig_version = "{VERSION}"`
+
+#### Runtime Image
+`alpine:latest`
+
+#### Build Args
+  - `ZIG_VERSION` - The version of the Zig toolchain (default: `0.13.0`)
+  - `BUILD_CMD` - The command to compile the project (default: `zig build -Doptimize=ReleaseSafe --prefix /app/out`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/alpine:latest`)
+  - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
+
+#### Build Command
+`zig build -Doptimize=ReleaseSafe --prefix /app/out`
+
+#### Start Command
+`["/app/app"]`
 
 ---
 

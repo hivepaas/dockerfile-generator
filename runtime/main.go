@@ -27,5 +27,6 @@ const (
 	RuntimeNameDotNet RuntimeName = "DotNet"
 	RuntimeNameDart   RuntimeName = "Dart"
 	RuntimeNameCpp    RuntimeName = "C++"
+	RuntimeNameZig    RuntimeName = "Zig"
 	RuntimeNameStatic RuntimeName = "Static"
 )
