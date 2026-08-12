@@ -195,7 +195,9 @@ RUN chown -R nonroot:nonroot /app/${DENO_DIR}
 COPY --chown=nonroot:nonroot --from=base /usr/bin/deno /usr/local/bin/deno
 COPY --chown=nonroot:nonroot . .
 
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ENV PORT=8080
 EXPOSE ${PORT}

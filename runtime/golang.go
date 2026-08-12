@@ -141,7 +141,9 @@ COPY --chown=nonroot:nonroot --from=build /go/bin/app .
 
 ENV PORT=8080
 EXPOSE ${PORT}
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 CMD ["/app/app"]
 `)
 

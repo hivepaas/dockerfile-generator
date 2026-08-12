@@ -171,7 +171,9 @@ COPY --from=build --chown=nonroot:nonroot /app/target/*.jar /app/target/
 
 ENV PORT=8080
 EXPOSE ${PORT}
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ARG JAVA_OPTS=
 ENV JAVA_OPTS=${JAVA_OPTS}
@@ -209,7 +211,9 @@ COPY --from=build --chown=nonroot:nonroot /app/build/libs/*.jar /app/build/libs/
 
 ENV PORT=8080
 EXPOSE ${PORT}
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ARG JAVA_OPTS=
 ENV JAVA_OPTS=${JAVA_OPTS}

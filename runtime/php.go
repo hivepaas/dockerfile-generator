@@ -170,7 +170,9 @@ EXPOSE ${PORT}
 RUN sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
 COPY --from=build --chown=nonroot:nonroot /app /var/www/html
 
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ARG START_CMD={{.StartCMD}}
 ENV START_CMD=${START_CMD}

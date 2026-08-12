@@ -167,7 +167,9 @@ RUN chown nonroot:nonroot .next
 COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
 COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
 
-USER nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ENV PORT=3000
 EXPOSE ${PORT}
@@ -221,7 +223,9 @@ COPY --from=builder --chown=nonroot:nonroot /app/public* ./public
 COPY --from=builder --chown=nonroot:nonroot /app/.next ./.next
 COPY --from=builder --chown=nonroot:nonroot /app/node_modules ./node_modules
 
-USER nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

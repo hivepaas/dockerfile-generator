@@ -148,6 +148,7 @@ Read on to see runtime-specific examples and how to configure the generated Dock
   - `BUILD_CMD` - The command to build the project (default: detected from `package.json`)
   - `START_CMD` - The command to start the project (default: detected from `package.json`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Build Command
 
@@ -185,6 +186,7 @@ Detected in order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected from `deno.jsonc` and source code)
   - `START_CMD` - The command to start the project (default: detected from `deno.jsonc` and source code)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 
@@ -222,6 +224,7 @@ Detected in order of precedence:
   - `OTP_VERSION` - The version of Erlang to install (default: `26.2.5`)
   - `BIN_NAME` - The name of the release binary (default: detected via app name in `mix.exs`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Start Command
 `/app/bin/{BIN_NAME} start`
@@ -252,6 +255,7 @@ Detected in order of precedence:
   - `GOPROXY` - The Go module proxy to use (default: `direct`)
   - `PACKAGE` - The package to compile e.g. `./cmd/http` (default: detected via `cmd` directory or `main.go`)
   - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Package Detection
   - Find the directory in `cmd` with a `.go` file
@@ -291,6 +295,7 @@ Maven version:
   - `BUILD_CMD` - The command to build the project (default: best guess via source code)
   - `START_CMD` - The command to start the project (default: detected via source code)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 - If Maven: `mvn install`
@@ -326,6 +331,7 @@ Maven version:
 #### Build Args
   - `NODE_VERSION` - The version of Node.js to install (default: `lts`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 ```sh
@@ -375,6 +381,7 @@ fi
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 - If Yarn: `yarn --frozen-lockfile`
@@ -414,6 +421,7 @@ In order of precedence:
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 - If Composer: `composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`
@@ -461,6 +469,7 @@ In order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 - If Poetry: `pip install poetry && poetry install --no-dev --no-ansi --no-root`
@@ -504,6 +513,7 @@ In order of precedence:
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
 - `bundle install`
@@ -535,6 +545,7 @@ In order of precedence:
   - `TARGETARCH` - The target architecture for the build (default: `amd64`)
   - `BIN_NAME` - The name of the release binary (default: detected via `Cargo.toml`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Build Command
 ```sh 

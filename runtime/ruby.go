@@ -158,7 +158,9 @@ RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
 ENV PORT=8080
 EXPOSE ${PORT}
-USER nonroot:nonroot
+# To run as root instead, pass build arg: --build-arg USER=root
+ARG USER=nonroot:nonroot
+USER ${USER}
 
 ARG START_CMD={{.StartCMD}}
 ENV START_CMD=${START_CMD}
