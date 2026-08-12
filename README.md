@@ -21,6 +21,7 @@
 
 ## Supported Runtimes
 
+- [Astro](#astro)
 - [Bun](#bun)
 - [C / C++](#c--c)
 - [C# / .NET](#c--net)
@@ -31,6 +32,7 @@
 - [Java](#java)
 - [Next.js](#nextjs)
 - [Node.js](#nodejs)
+- [Nuxt](#nuxt)
 - [PHP](#php)
 - [Python](#python)
 - [Ruby](#ruby)
@@ -121,6 +123,55 @@ Runtimes are matched against in the order they appear when you run `dockerfile-g
 Read on to see runtime-specific examples and how to configure the generated Dockerfile.
 
 ## Runtime Documentation
+
+---
+
+### Astro
+
+[Astro](https://astro.build/) is the web framework for content-driven websites. Astro supports both Server-Side Rendering (SSR) via adapters and purely Static Site Generation (SSG).
+
+#### Detected Files
+  - `astro.config.js`
+  - `astro.config.ts`
+  - `astro.config.mjs`
+  - `astro.config.mts`
+  - `astro.config.cjs`
+
+#### Output Mode Detection
+The runtime inspects the Astro config file to determine the output mode:
+  - **SSR (Node adapter)**: detects `@astrojs/node` in the config or `package.json` → uses the Node.js SSR template
+  - **Static**: detects `output: "static"` in the config → uses the Static Web Server template
+  - **Default**: SSR Node.js template if no adapter is detected
+
+#### Version Detection
+  - `.nvmrc`
+  - `.node-version`
+  - `.tool-versions` - `nodejs {VERSION}`
+  - `.mise.toml` - `node = "{VERSION}"`
+  - `package.json` - `engines.node`
+  - Default: `lts`
+
+#### Runtime Image (SSR)
+`node:${NODE_VERSION}-slim`
+
+#### Runtime Image (Static)
+`joseluisq/static-web-server:2-debian`
+
+#### Build Args
+  - `NODE_VERSION` - The Node.js version to build and run on (default: `lts`)
+  - `INSTALL_CMD` - Custom install command (default: auto-detected via lockfile)
+  - `BUILD_CMD` - Custom build command (default: `npm run build` / `yarn build` / etc.)
+  - `RUNNER` - The base runtime image (default: `node:${NODE_VERSION}-slim` for SSR, `joseluisq/static-web-server:2-debian` for static)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`)
+
+#### Start Command (SSR)
+`CMD ["node", "./dist/server/entry.mjs"]`
+
+#### Start Command (Static)
+Handled automatically by the static web server serving the `/public` directory.
+
+---
 
 ### Bun
 
@@ -405,6 +456,57 @@ Maven version:
 #### Start Command
 - Default: `java $JAVA_OPTS -jar target/*jar`
 - If Spring Boot: `java -Dserver.port=${PORT} $JAVA_OPTS -jar target/*jar`
+
+---
+
+### Nuxt
+
+[Nuxt](https://nuxt.com/) is the intuitive Vue framework. Nuxt 3 uses [Nitro](https://nitro.unjs.io/) as its server engine, compiling to a self-contained bundle.
+
+#### Detected Files
+  - `nuxt.config.ts`
+  - `nuxt.config.js`
+  - `nuxt.config.mjs`
+  - `nuxt.config.mts`
+  - `nuxt.config.cjs`
+
+#### Output Mode Detection
+The runtime inspects the Nuxt config to determine output mode:
+  - **SSR (default)**: Uses Nitro server template → output in `.output/server/index.mjs`
+  - **Static (SSG)**: Detects `ssr: false` or static Nitro presets (`github-pages`, `cloudflare-pages`, `netlify-static`) → uses static web server
+
+#### Version Detection
+  - `.nvmrc`, `.node-version`
+  - `.tool-versions` - `nodejs {VERSION}`
+  - `.mise.toml` - `node = "{VERSION}"`
+  - `package.json` - `engines.node`
+  - Default: `lts`
+
+#### Runtime Image (SSR)
+`node:${NODE_VERSION}-slim`
+
+#### Runtime Image (Static)
+`joseluisq/static-web-server:2-debian`
+
+#### Build Args
+  - `NODE_VERSION` - The Node.js version (default: `lts`)
+  - `INSTALL_CMD` - Custom install command
+  - `BUILD_CMD` - Custom build/generate command
+  - `RUNNER` - Base runtime image
+  - `APT_EXTRA_PKGS` - Extra APT packages
+  - `USER` - The user to run as (default: `nonroot:nonroot`)
+
+#### Build Command (SSR)
+`npm run build` / `yarn build` / `pnpm run build`
+
+#### Build Command (Static)
+`npm run generate` / `yarn generate` / `pnpm run generate`
+
+#### Start Command (SSR)
+`CMD ["node", "./server/index.mjs"]`
+
+#### Start Command (Static)
+Handled automatically by the static web server serving the `/public` directory.
 
 ---
 

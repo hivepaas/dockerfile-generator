@@ -29,5 +29,7 @@ const (
 	RuntimeNameCpp    RuntimeName = "C++"
 	RuntimeNameZig    RuntimeName = "Zig"
 	RuntimeNameScala  RuntimeName = "Scala"
+	RuntimeNameAstro  RuntimeName = "Astro"
+	RuntimeNameNuxt   RuntimeName = "Nuxt"
 	RuntimeNameStatic RuntimeName = "Static"
 )
