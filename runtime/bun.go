@@ -147,6 +147,7 @@ func (d *Bun) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 var bunTemplate = strings.TrimSpace(`
 ARG BUN_VERSION={{.Version}}
 ARG BUILDER=docker.io/oven/bun
+ARG RUNNER=${BUILDER}:${BUN_VERSION}-slim
 FROM ${BUILDER}:${BUN_VERSION} AS base
 
 FROM base AS deps
@@ -163,7 +164,7 @@ ENV NODE_ENV=production
 ARG BUILD_CMD={{.BuildCMD}}
 RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-FROM ${BUILDER}:${BUN_VERSION}-slim AS runtime
+FROM ${RUNNER} AS runtime
 WORKDIR /app
 
 ARG APT_EXTRA_PKGS=

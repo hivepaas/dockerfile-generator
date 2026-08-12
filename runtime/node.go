@@ -175,7 +175,8 @@ var startScriptRe = regexp.MustCompile(`^.*?\b(ts-)?node(mon)?\b.*?(index|main|s
 var nodeTemplate = strings.TrimSpace(`
 ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
-FROM ${BUILDER}:${NODE_VERSION}-slim AS base
+ARG RUNNER=${BUILDER}:${NODE_VERSION}-slim
+FROM ${RUNNER} AS base
 RUN corepack enable
 
 FROM base AS deps

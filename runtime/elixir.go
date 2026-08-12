@@ -114,7 +114,8 @@ RUN mix compile
 COPY config/runtime.exs config/
 RUN mix release
 
-FROM debian:stable-slim AS runtime
+ARG RUNNER=docker.io/library/debian:stable-slim
+FROM ${RUNNER} AS runtime
 WORKDIR /app
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget libstdc++6 openssl libncurses5 locales ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*

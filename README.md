@@ -147,6 +147,7 @@ Read on to see runtime-specific examples and how to configure the generated Dock
   - `INSTALL_CMD` - The command to install dependencies (default: `bun install`)
   - `BUILD_CMD` - The command to build the project (default: detected from `package.json`)
   - `START_CMD` - The command to start the project (default: detected from `package.json`)
+  - `RUNNER` - The base runtime image (default: `docker.io/oven/bun:${BUN_VERSION}-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -185,6 +186,7 @@ Detected in order of precedence:
   - `DENO_VERSION` - The version of Deno to install (default: `latest`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from `deno.jsonc` and source code)
   - `START_CMD` - The command to start the project (default: detected from `deno.jsonc` and source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/debian:stable-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -254,6 +256,7 @@ Detected in order of precedence:
   - `CGO_ENABLED` - Enable CGO for the build (default: `0`)
   - `GOPROXY` - The Go module proxy to use (default: `direct`)
   - `PACKAGE` - The package to compile e.g. `./cmd/http` (default: detected via `cmd` directory or `main.go`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/alpine:latest`)
   - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -294,6 +297,7 @@ Maven version:
   - `JAVA_OPTS` - The Java options to pass to the JVM (default: `-Xmx512m -Xms256m`)
   - `BUILD_CMD` - The command to build the project (default: best guess via source code)
   - `START_CMD` - The command to start the project (default: detected via source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -330,6 +334,7 @@ Maven version:
 
 #### Build Args
   - `NODE_VERSION` - The version of Node.js to install (default: `lts`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/node:${NODE_VERSION}-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -380,6 +385,7 @@ fi
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/node:${NODE_VERSION}-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -420,6 +426,7 @@ In order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected via source code)
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/php:${PHP_VERSION}-apache`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -468,6 +475,7 @@ In order of precedence:
   - `PYTHON_VERSION` - The version of Python to install (default: `3.12`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/python:${PYTHON_VERSION}-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -512,6 +520,7 @@ In order of precedence:
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/ruby:${RUBY_VERSION}-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -544,6 +553,7 @@ In order of precedence:
   - `TARGETOS` - The target OS for the build (default: `linux`)
   - `TARGETARCH` - The target architecture for the build (default: `amd64`)
   - `BIN_NAME` - The name of the release binary (default: detected via `Cargo.toml`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/debian:stable-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
@@ -576,6 +586,7 @@ It is nearly as fast as Nginx and Lighttpd, but is [easily configurable with env
 #### Build Args
   - `VERSION` - The version of the static web server to install (default: `2`)
   - `SERVER_ROOT` - The root directory of the server (default: detected from source code)
+  - `RUNNER` - The base runtime image (default: `docker.io/joseluisq/static-web-server:${VERSION}-debian`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
 
 ---

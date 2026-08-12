@@ -113,7 +113,8 @@ ARG TARGETARCH=amd64
 RUN if [ "${TARGETARCH}" = "amd64" ]; then rustup target add x86_64-unknown-linux-gnu; else rustup target add aarch64-unknown-linux-gnu; fi
 RUN if [ "${TARGETARCH}" = "amd64" ]; then cargo zigbuild --release --target x86_64-unknown-linux-gnu; else cargo zigbuild --release --target aarch64-unknown-linux-gnu; fi
 
-FROM debian:stable-slim AS runtime
+ARG RUNNER=docker.io/library/debian:stable-slim
+FROM ${RUNNER} AS runtime
 WORKDIR /app
 
 ARG APT_EXTRA_PKGS=

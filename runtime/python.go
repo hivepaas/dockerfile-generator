@@ -190,7 +190,8 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
 var pythonTemplate = strings.TrimSpace(`
 ARG PYTHON_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/python
-FROM ${BUILDER}:${PYTHON_VERSION}-slim
+ARG RUNNER=${BUILDER}:${PYTHON_VERSION}-slim
+FROM ${RUNNER}
 WORKDIR /app
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*

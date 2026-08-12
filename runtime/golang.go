@@ -130,7 +130,8 @@ RUN if [ "${CGO_ENABLED}" = "1" ]; then apk add --no-cache build-base; fi
 # -ldflags="-s -w" removes the symbol table and debug information from the binary
 RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"
 
-FROM alpine:latest
+ARG RUNNER=docker.io/library/alpine:latest
+FROM ${RUNNER}
 WORKDIR /app
 ARG APK_EXTRA_PKGS=
 RUN apk add --no-cache ca-certificates tzdata wget ${APK_EXTRA_PKGS}

@@ -157,7 +157,8 @@ RUN mvn install
 ARG BUILD_CMD={{.BuildCMD}}
 RUN if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-FROM eclipse-temurin:${JAVA_VERSION}-jdk AS runtime
+ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
+FROM ${RUNNER} AS runtime
 WORKDIR /app
 VOLUME /tmp
 
@@ -197,7 +198,8 @@ COPY src src
 ARG BUILD_CMD={{.BuildCMD}}
 RUN if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-FROM eclipse-temurin:${JAVA_VERSION}-jdk AS runtime
+ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
+FROM ${RUNNER} AS runtime
 WORKDIR /app
 VOLUME /tmp
 

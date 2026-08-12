@@ -179,7 +179,8 @@ ARG DENO_VERSION={{.Version}}
 ARG BUILDER=docker.io/denoland/deno
 FROM ${BUILDER}:${DENO_VERSION} as base
 
-FROM debian:stable-slim
+ARG RUNNER=docker.io/library/debian:stable-slim
+FROM ${RUNNER}
 WORKDIR /app
 
 ARG APT_EXTRA_PKGS=

@@ -73,7 +73,8 @@ func (d *Static) GenerateDockerfile(path string, data ...map[string]string) ([]b
 var staticTemplate = strings.TrimSpace(`
 ARG VERSION=2
 ARG BUILDER=docker.io/joseluisq/static-web-server
-FROM ${BUILDER}:${VERSION}-debian
+ARG RUNNER=${BUILDER}:${VERSION}-debian
+FROM ${RUNNER}
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 COPY . .

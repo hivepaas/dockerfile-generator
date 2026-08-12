@@ -139,7 +139,8 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 var rubyTemplate = strings.TrimSpace(`
 ARG RUBY_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/ruby
-FROM ${BUILDER}:${RUBY_VERSION}-slim
+ARG RUNNER=${BUILDER}:${RUBY_VERSION}-slim
+FROM ${RUNNER}
 WORKDIR /app
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
