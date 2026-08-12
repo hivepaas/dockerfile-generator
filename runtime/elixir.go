@@ -99,11 +99,15 @@ ENV MIX_ENV=prod
 RUN mix local.hex --force && mix local.rebar --force
 
 COPY mix.exs mix.lock ./
-RUN mix deps.get --only $MIX_ENV
+RUN --mount=type=cache,target=/root/.hex \
+    --mount=type=cache,target=/root/.mix/archives \
+    mix deps.get --only $MIX_ENV
 RUN mkdir config
 
 COPY config/config.exs config/${MIX_ENV}.exs config/
-RUN mix deps.compile
+RUN --mount=type=cache,target=/root/.hex \
+    --mount=type=cache,target=/root/.mix/archives \
+    mix deps.compile
 
 COPY priv priv
 COPY lib lib

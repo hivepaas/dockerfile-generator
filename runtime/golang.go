@@ -114,7 +114,8 @@ COPY go.mod* go.sum* ./
 # GOPROXY is used to specify the module proxy to use.
 ARG GOPROXY=direct
 ENV GOPROXY=${GOPROXY}
-RUN if [ -f go.mod ]; then go mod download && go mod tidy; fi
+RUN --mount=type=cache,target=/go/pkg/mod \
+    if [ -f go.mod ]; then go mod download && go mod tidy; fi
 
 FROM deps AS build
 WORKDIR /go/src/app
@@ -128,7 +129,9 @@ ARG CGO_ENABLED=0
 RUN if [ "${CGO_ENABLED}" = "1" ]; then apk add --no-cache build-base; fi
 # -trimpath removes the absolute path to the source code in the binary
 # -ldflags="-s -w" removes the symbol table and debug information from the binary
-RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"
 
 ARG RUNNER=docker.io/library/alpine:latest
 FROM ${RUNNER}

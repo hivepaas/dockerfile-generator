@@ -154,7 +154,8 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json bun.lockb ./
 ARG INSTALL_CMD="bun install"
-RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
 
 FROM base AS builder
 WORKDIR /app

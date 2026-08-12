@@ -68,7 +68,7 @@ func TestDenoGenerateDockerfile(t *testing.T) {
 			path: "../testdata/deno-jsonc",
 			data: map[string]string{"InstallMounts": `--mount=type=secret,id=_env,target=/app/.env \
     `},
-			expected: []any{regexp.MustCompile(`^RUN --mount=type=secret,id=_env,target=/app/.env \\$`)},
+			expected: []any{regexp.MustCompile(`--mount=type=secret,id=_env,target=/app/.env \\$`)},
 		},
 		{
 			name:     "Not a Deno project",

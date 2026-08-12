@@ -103,14 +103,14 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			path: "../testdata/ruby-config-ru",
 			data: map[string]string{"BuildMounts": `--mount=type=secret,id=_env,target=/app/.env \
     `},
-			expected: []any{regexp.MustCompile(`^RUN --mount=type=secret,id=_env,target=/app/.env \\$`)},
+			expected: []any{regexp.MustCompile(`--mount=type=secret,id=_env,target=/app/.env \\$`)},
 		},
 		{
 			name: "Ruby project with install mounts",
 			path: "../testdata/ruby-config-ru",
 			data: map[string]string{"InstallMounts": `--mount=type=secret,id=_env,target=/app/.env \
     `},
-			expected: []any{regexp.MustCompile(`^RUN --mount=type=secret,id=_env,target=/app/.env \\$`)},
+			expected: []any{regexp.MustCompile(`--mount=type=secret,id=_env,target=/app/.env \\$`)},
 		},
 		{
 			name: "Ruby project with rails",

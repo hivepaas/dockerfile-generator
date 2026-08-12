@@ -203,7 +203,8 @@ USER ${USER}
 ENV PORT=8080
 EXPOSE ${PORT}
 ARG INSTALL_CMD={{.InstallCMD}}
-RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
+RUN --mount=type=cache,target=/app/.deno_cache \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
 
 ARG START_CMD={{.StartCMD}}
 ENV START_CMD=${START_CMD}

@@ -154,7 +154,8 @@ ENV NODE_ENV=production
 RUN chown -R nonroot:nonroot /app
 COPY --chown=nonroot:nonroot . .
 
-RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD";  fi
+RUN --mount=type=cache,target=/root/.bundle \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD";  fi
 RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
 ENV PORT=8080

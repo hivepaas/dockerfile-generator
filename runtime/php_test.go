@@ -73,14 +73,14 @@ func TestPHPGenerateDockerfile(t *testing.T) {
 			path: "../testdata/php-npm",
 			data: map[string]string{"BuildMounts": `--mount=type=secret,id=_env,target=/app/.env \
     `},
-			expected: []any{regexp.MustCompile(`^RUN --mount=type=secret,id=_env,target=/app/.env \\$`)},
+			expected: []any{regexp.MustCompile(`--mount=type=secret,id=_env,target=/app/.env \\$`)},
 		},
 		{
 			name: "PHP project with install mounts",
 			path: "../testdata/php-npm",
 			data: map[string]string{"InstallMounts": `--mount=type=secret,id=_env,target=/app/.env \
     `},
-			expected: []any{regexp.MustCompile(`^RUN --mount=type=secret,id=_env,target=/app/.env \\$`)},
+			expected: []any{regexp.MustCompile(`--mount=type=secret,id=_env,target=/app/.env \\$`)},
 		},
 		{
 			name:     "Not a PHP project",

@@ -149,13 +149,13 @@ FROM maven:${MAVEN_VERSION}-eclipse-temurin-${JAVA_VERSION} AS build
 WORKDIR /app
 
 COPY pom.xml* pom.atom* pom.clj* pom.groovy* pom.rb* pom.scala* pom.yml* pom.yaml* .
-RUN mvn dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline
 
 COPY src src
-RUN mvn install
+RUN --mount=type=cache,target=/root/.m2 mvn install
 
 ARG BUILD_CMD={{.BuildCMD}}
-RUN if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
+RUN --mount=type=cache,target=/root/.m2 if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
 ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${RUNNER} AS runtime
@@ -196,7 +196,7 @@ COPY gradle/ ./gradle/
 COPY src src
 
 ARG BUILD_CMD={{.BuildCMD}}
-RUN if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
+RUN --mount=type=cache,target=/root/.gradle if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
 ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${RUNNER} AS runtime

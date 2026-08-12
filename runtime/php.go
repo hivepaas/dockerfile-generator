@@ -156,7 +156,8 @@ COPY . .
 
 ARG INSTALL_CMD={{.InstallCMD}}
 ARG BUILD_CMD={{.BuildCMD}}
-RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
+RUN --mount=type=cache,target=/root/.composer/cache \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
 RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
 FROM ${RUNNER} AS runtime

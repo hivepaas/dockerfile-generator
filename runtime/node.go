@@ -185,7 +185,10 @@ COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
 ARG INSTALL_CMD={{.InstallCMD}}
 ARG NPM_MIRROR=
 RUN if [ ! -z "${NPM_MIRROR}" ]; then npm config set registry ${NPM_MIRROR}; fi
-RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then echo "${INSTALL_CMD}" > dep.sh; sh dep.sh; fi
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/usr/local/share/.cache/yarn \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then echo "${INSTALL_CMD}" > dep.sh; sh dep.sh; fi
 
 FROM base AS builder
 WORKDIR /app

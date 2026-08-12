@@ -207,7 +207,10 @@ ENV PYTHONUNBUFFERED=1
 
 COPY --chown=nonroot:nonroot . .
 ARG INSTALL_CMD={{.InstallCMD}}
-RUN if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD";  fi
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/var/cache/pypoetry \
+    --mount=type=cache,target=/var/cache/uv \
+    if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD";  fi
 
 ENV PORT=8080
 EXPOSE ${PORT}

@@ -118,7 +118,10 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
-RUN {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/usr/local/share/.cache/yarn \
+    {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
   elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
@@ -136,7 +139,8 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
+RUN --mount=type=cache,target=/app/.next/cache \
+    {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
@@ -190,7 +194,10 @@ FROM ${RUNNER} AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
-RUN {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/usr/local/share/.cache/yarn \
+    {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
   elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
@@ -203,7 +210,8 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
+RUN --mount=type=cache,target=/app/.next/cache \
+    {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
