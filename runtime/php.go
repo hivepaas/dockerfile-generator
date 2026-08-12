@@ -162,7 +162,7 @@ FROM php:${VERSION}-apache AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
-RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot	
+RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 	
 ENV PORT=8080
 EXPOSE ${PORT}

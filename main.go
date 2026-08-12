@@ -29,14 +29,24 @@ type Dockerfile struct {
 	log *slog.Logger
 }
 
-// Generates a Dockerfile for the given path and writes it to the same directory.
-func (a *Dockerfile) Write(path string) error {
-	runtime, err := a.MatchRuntime(path)
+// Generates a Dockerfile in-memory for the given path without writing to disk.
+func (a *Dockerfile) Generate(path string, data ...map[string]string) ([]byte, runtime.Runtime, error) {
+	r, err := a.MatchRuntime(path)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	contents, err := runtime.GenerateDockerfile(path)
+	contents, err := r.GenerateDockerfile(path, data...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return contents, r, nil
+}
+
+// Generates a Dockerfile for the given path and writes it to the same directory.
+func (a *Dockerfile) Write(path string, data ...map[string]string) error {
+	contents, r, err := a.Generate(path, data...)
 	if err != nil {
 		return err
 	}
@@ -46,8 +56,7 @@ func (a *Dockerfile) Write(path string) error {
 		return err
 	}
 
-	// a.log.Info("Auto-generated Dockerfile for project using " + string(lang.Name()) + "\n" + *contents)
-	a.log.Info("Auto-generated Dockerfile for project using " + string(runtime.Name()))
+	a.log.Info("Auto-generated Dockerfile for project using " + string(r.Name()))
 	return nil
 }
 

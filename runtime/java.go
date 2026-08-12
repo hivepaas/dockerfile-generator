@@ -163,7 +163,7 @@ VOLUME /tmp
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
-RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot
+RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
 
 COPY --from=build --chown=nonroot:nonroot /app/target/*.jar /app/target/
@@ -199,7 +199,7 @@ WORKDIR /app
 VOLUME /tmp
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget && apt-get clean && rm -f /var/lib/apt/lists/*_*
-RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot
+RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
 
 COPY --from=build --chown=nonroot:nonroot /app/build/libs/*.jar /app/build/libs/

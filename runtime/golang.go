@@ -128,11 +128,10 @@ ARG CGO_ENABLED=0
 # -ldflags="-s -w" removes the symbol table and debug information from the binary
 RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"
 
-FROM debian:stable-slim
+FROM alpine:latest
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
-RUN update-ca-certificates 2>/dev/null || true
-RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot
+RUN apk add --no-cache ca-certificates tzdata wget
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
 RUN chown -R nonroot:nonroot /app
 
 COPY --chown=nonroot:nonroot --from=build /go/bin/app .
@@ -161,18 +160,21 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 				continue
 			}
 
-			defer f.Close()
 			switch file {
 			case ".tool-versions":
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
 					line := scanner.Text()
 					if strings.Contains(line, "golang") {
-						version = strings.Split(line, " ")[1]
-						log.Info("Detected Go version in .tool-versions: " + version)
+						parts := strings.Fields(line)
+						if len(parts) >= 2 {
+							version = parts[1]
+							log.Info("Detected Go version in .tool-versions: " + version)
+						}
 						break
 					}
 				}
+				_ = f.Close()
 
 				if err := scanner.Err(); err != nil {
 					return nil, fmt.Errorf("Failed to read .tool-versions file")
@@ -182,12 +184,16 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
 					line := scanner.Text()
-					if strings.Contains(line, "go ") {
-						version = strings.Split(line, " ")[1]
-						log.Info("Detected Go version in go.mod: " + version)
+					if strings.HasPrefix(strings.TrimSpace(line), "go ") {
+						parts := strings.Fields(line)
+						if len(parts) >= 2 {
+							version = parts[1]
+							log.Info("Detected Go version in go.mod: " + version)
+						}
 						break
 					}
 				}
+				_ = f.Close()
 
 				if err := scanner.Err(); err != nil {
 					return nil, fmt.Errorf("Failed to read go.mod file")
@@ -195,24 +201,25 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 
 			case ".mise.toml":
 				var mise MiseToml
-				if err := toml.NewDecoder(f).Decode(&mise); err != nil {
+				err := toml.NewDecoder(f).Decode(&mise)
+				_ = f.Close()
+				if err != nil {
 					return nil, fmt.Errorf("Failed to decode .mise.toml file")
 				}
 				goVersion, ok := mise.Tools["go"].(string)
 				if !ok {
 					versions, ok := mise.Tools["go"].([]string)
-					if ok {
+					if ok && len(versions) > 0 {
 						goVersion = versions[0]
 					}
 				}
 				if goVersion != "" {
 					version = goVersion
-					log.Info("Detected Python version in .mise.toml: " + version)
+					log.Info("Detected Go version in .mise.toml: " + version)
 					break
 				}
 			}
 
-			f.Close()
 			if version != "" {
 				break
 			}
@@ -220,7 +227,7 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	if version == "" {
-		version = "1.17"
+		version = "1.24"
 		log.Info(fmt.Sprintf("No Go version detected. Using: %s", version))
 	}
 
