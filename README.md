@@ -35,6 +35,7 @@
 - [Nuxt](#nuxt)
 - [PHP](#php)
 - [Python](#python)
+- [R](#r)
 - [Ruby](#ruby)
 - [Rust](#rust)
 - [Scala](#scala)
@@ -689,6 +690,55 @@ In order of precedence:
 - If FastAPI is detected: `fastapi run [main.py, app.py, application.py, app/main.py, app/application.py, app/__init__.py] --port ${PORT}`
 - If `pyproject.toml` exists: `python -m ${projectName}`
 - Otherwise: `python [main.py, app.py, application.py, app/main.py, app/application.py, app/__init__.py]`
+
+---
+
+### R
+
+[R](https://www.r-project.org/) is a language and environment for statistical computing and graphics. For web deployments, R is commonly used with [Plumber](https://www.rplumber.io/) (REST APIs) or [Shiny](https://shiny.posit.co/) (interactive web apps).
+
+#### Detected Files
+  - `plumber.R` → Plumber API
+  - `app.R` → Shiny app
+  - `server.R` + `ui.R` → Shiny app
+  - `renv.lock` → R project with renv
+  - `DESCRIPTION` → R package
+  - `packrat/packrat.lock` → R project with packrat
+  - `*.Rproj` → RStudio project
+
+#### App Type Detection
+  - **Plumber API**: `plumber.R` file present
+  - **Shiny app**: `app.R` or `server.R`+`ui.R` with `library(shiny)` / `shinyApp()`
+  - **Default**: Plumber API template
+
+#### Version Detection
+  - `.r-version` file
+  - `renv.lock` - `R.Version`
+  - `DESCRIPTION` - `Depends: R (>= x.x.x)`
+  - Default: `4.4.1`
+
+#### Runtime Image (Plumber)
+`rocker/r-ver:${R_VERSION}`
+
+#### Runtime Image (Shiny)
+`rocker/shiny:${R_VERSION}`
+
+#### Build Args
+  - `R_VERSION` - The R version (default: `4.4.1`)
+  - `RUNNER` - The base runtime image
+  - `APT_EXTRA_PKGS` - Extra APT packages to install
+  - `USER` - The user to run as (default: `nonroot:nonroot`, Plumber only)
+  - `PLUMBER_FILE` - The Plumber entrypoint file (default: `plumber.R`)
+
+#### Dependency Installation
+If `renv.lock` is present: `renv::restore()`  
+Otherwise: `pak::pak("plumber")` or `pak::pak("shiny")`
+
+#### Start Command (Plumber)
+`Rscript -e "pr <- plumber::plumb('plumber.R'); pr$run(host='0.0.0.0', port=8080)"`
+
+#### Start Command (Shiny)
+`/usr/bin/shiny-server` (via `rocker/shiny` built-in server)
 
 ---
 

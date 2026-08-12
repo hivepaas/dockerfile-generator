@@ -1,0 +1,19 @@
+{
+  "R": {
+    "Version": "4.4.1",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Packages": {
+    "plumber": {
+      "Package": "plumber",
+      "Version": "1.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    }
+  }
+}

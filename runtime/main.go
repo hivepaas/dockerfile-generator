@@ -31,5 +31,6 @@ const (
 	RuntimeNameScala  RuntimeName = "Scala"
 	RuntimeNameAstro  RuntimeName = "Astro"
 	RuntimeNameNuxt   RuntimeName = "Nuxt"
+	RuntimeNameR      RuntimeName = "R"
 	RuntimeNameStatic RuntimeName = "Static"
 )

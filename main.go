@@ -81,6 +81,7 @@ func (a *Dockerfile) ListRuntimes() []runtime.Runtime {
 		&runtime.Cpp{Log: a.log},
 		&runtime.Zig{Log: a.log},
 		&runtime.Scala{Log: a.log},
+		&runtime.R{Log: a.log},
 		&runtime.Static{Log: a.log},
 	}
 }
