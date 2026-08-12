@@ -90,6 +90,7 @@ var elixirTemplate = strings.TrimSpace(`
 ARG ELIXIR_VERSION={{.ElixirVersion}}
 ARG OTP_VERSION={{.OTPVersion}}
 ARG BUILDER=docker.io/library/elixir
+ARG RUNNER=docker.io/library/debian:stable-slim
 FROM ${BUILDER}:${ELIXIR_VERSION}-otp-${OTP_VERSION}-slim AS build
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y build-essential git \
@@ -118,7 +119,6 @@ RUN mix compile
 COPY config/runtime.exs config/
 RUN mix release
 
-ARG RUNNER=docker.io/library/debian:stable-slim
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 ARG APT_EXTRA_PKGS=

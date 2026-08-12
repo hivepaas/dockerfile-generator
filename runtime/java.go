@@ -145,6 +145,7 @@ func (d *Java) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 var javaMavenTemplate = strings.TrimSpace(`
 ARG JAVA_VERSION={{.Version}}
 ARG MAVEN_VERSION={{.MavenVersion}}
+ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM maven:${MAVEN_VERSION}-eclipse-temurin-${JAVA_VERSION} AS build
 WORKDIR /app
 
@@ -157,7 +158,6 @@ RUN --mount=type=cache,target=/root/.m2 mvn install
 ARG BUILD_CMD={{.BuildCMD}}
 RUN --mount=type=cache,target=/root/.m2 if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 VOLUME /tmp
@@ -188,6 +188,7 @@ var javaGradleTemplate = strings.TrimSpace(`
 ARG JAVA_VERSION={{.Version}}
 ARG GRADLE_VERSION={{.GradleVersion}}
 ARG BUILDER=docker.io/library/gradle
+ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${BUILDER}:${GRADLE_VERSION}-jdk${JAVA_VERSION} AS build
 WORKDIR /app
 
@@ -198,7 +199,6 @@ COPY src src
 ARG BUILD_CMD={{.BuildCMD}}
 RUN --mount=type=cache,target=/root/.gradle if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 VOLUME /tmp

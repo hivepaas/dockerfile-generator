@@ -105,6 +105,7 @@ var golangTemplate = strings.TrimSpace(`
 ARG GO_VERSION={{.Version}}
 ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/golang
+ARG RUNNER=docker.io/library/alpine:latest
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:${GO_VERSION}-alpine AS base
 RUN apk add --no-cache ca-certificates git tzdata
 
@@ -133,7 +134,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"
 
-ARG RUNNER=docker.io/library/alpine:latest
 FROM ${RUNNER}
 WORKDIR /app
 ARG APK_EXTRA_PKGS=

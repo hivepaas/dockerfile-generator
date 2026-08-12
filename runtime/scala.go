@@ -86,6 +86,7 @@ func detectScalaStartCmd(path string, log *slog.Logger) string {
 var scalaTemplate = strings.TrimSpace(`
 ARG JAVA_VERSION={{.JavaVersion}}
 ARG BUILDER=docker.io/sbtscala/sbt
+ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${BUILDER}:latest AS build
 WORKDIR /app
 
@@ -107,7 +108,6 @@ RUN --mount=type=cache,target=/root/.sbt \
     elif grep -rq "sbt-assembly" project 2>/dev/null; then sbt assembly; \
     else sbt compile package; fi
 
-ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 

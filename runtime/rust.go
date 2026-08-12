@@ -104,6 +104,7 @@ func (d *Rust) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 var rustlangTemplate = strings.TrimSpace(`
 ARG BUILDPLATFORM=linux
 ARG BUILDER=docker.io/messense/cargo-zigbuild
+ARG RUNNER=docker.io/library/debian:stable-slim
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:latest AS build
 WORKDIR /app
 COPY . .
@@ -116,7 +117,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     if [ "${TARGETARCH}" = "amd64" ]; then cargo zigbuild --release --target x86_64-unknown-linux-gnu; else cargo zigbuild --release --target aarch64-unknown-linux-gnu; fi
 
-ARG RUNNER=docker.io/library/debian:stable-slim
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 
