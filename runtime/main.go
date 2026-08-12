@@ -28,5 +28,6 @@ const (
 	RuntimeNameDart   RuntimeName = "Dart"
 	RuntimeNameCpp    RuntimeName = "C++"
 	RuntimeNameZig    RuntimeName = "Zig"
+	RuntimeNameScala  RuntimeName = "Scala"
 	RuntimeNameStatic RuntimeName = "Static"
 )

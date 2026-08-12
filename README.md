@@ -35,6 +35,7 @@
 - [Python](#python)
 - [Ruby](#ruby)
 - [Rust](#rust)
+- [Scala](#scala)
 - [Static](#static-html-css-js) (HTML, CSS, JS)
 - [Zig](#zig)
 
@@ -692,6 +693,46 @@ Determined by the binary name in the `Cargo.toml` file
 
 #### Start Command
 `["/app/app"]`
+
+---
+
+### Scala
+
+[Scala](https://www.scala-lang.org/) is a strong statically typed high-level general-purpose programming language that supports both object-oriented programming and functional programming.
+
+#### Detected Files
+  - `build.sbt`
+  - `project/build.properties`
+  - `project/plugins.sbt`
+  - `src/main/scala/`
+
+#### Version Detection
+  - `build.sbt` - `scalaVersion := "{VERSION}"`
+  - `.tool-versions` - `scala {VERSION}`
+  - `.mise.toml` - `scala = "{VERSION}"`
+
+#### Runtime Image
+`eclipse-temurin:${JAVA_VERSION}-jdk`
+
+#### Build Args
+  - `JAVA_VERSION` - The Java version to run on (default: `21`)
+  - `BUILD_CMD` - The command to build the project (default: auto-detected via `sbt stage`, `sbt assembly`, or `sbt compile package`)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk`)
+  - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
+  - `JAVA_OPTS` - JVM options to pass at runtime (default: empty)
+
+#### Build Command
+Detected in order of precedence:
+  - If `sbt-native-packager` is in `project/`: `sbt stage`
+  - If `sbt-assembly` is in `project/`: `sbt assembly`
+  - Otherwise: `sbt compile package`
+
+#### Start Command
+```
+if [ -d target/universal/stage/bin ]; then exec $(find target/universal/stage/bin ...) -Dhttp.port=${PORT};
+else exec java ${JAVA_OPTS} -jar $(find target -name "*.jar" ...); fi
+```
 
 ---
 
