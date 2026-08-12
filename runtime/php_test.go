@@ -56,17 +56,17 @@ func TestPHPGenerateDockerfile(t *testing.T) {
 		{
 			name:     "PHP project",
 			path:     "../testdata/php",
-			expected: []any{`ARG VERSION=8.3`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=8.3`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
 		},
 		{
 			name:     "PHP project with composer",
 			path:     "../testdata/php-composer",
-			expected: []any{`ARG VERSION=5.3`, `ARG INSTALL_CMD="composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=5.3`, `ARG INSTALL_CMD="composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
 		},
 		{
 			name:     "PHP project with NPM",
 			path:     "../testdata/php-npm",
-			expected: []any{`ARG VERSION=8.2.0`, `ARG INSTALL_CMD="yarn --frozen-lockfile"`, `ARG BUILD_CMD="yarn run build"`, `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=8.2.0`, `ARG INSTALL_CMD="yarn --frozen-lockfile"`, `ARG BUILD_CMD="yarn run build"`, `ARG START_CMD="apache2-foreground`},
 		},
 		{
 			name: "PHP project with build mounts",
@@ -85,7 +85,7 @@ func TestPHPGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a PHP project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=8.3`, regexp.MustCompile(`^ARG INSTALL_CMD=$`), regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=8.3`, regexp.MustCompile(`^ARG INSTALL_CMD=$`), regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
 		},
 	}
 

@@ -12,7 +12,7 @@
 - [x] Make a best effort to detect any install, build, and start commands
 - [x] Generate a Dockerfile with sensible defaults that are configurable via [Docker Build Args](https://docs.docker.com/build/guide/build-args/)
 - [x] Support for a wide range of the most popular languages and frameworks including Next.js, Phoenix, Spring Boot, Django, and more
-- [x] Use Debian Slim as the runtime image for a smaller image size and better security, while still supporting the most common dependencies and avoiding deployment headaches caused by Alpine Linux gotchas
+- [x] Use Debian Slim (and Alpine for Go) as the runtime image for optimal image size, performance, and security
 - [x] Includes `wget` in the runtime image for adding health checks to services, e.g. `wget -nv -t1 --spider 'http://localhost:8080/healthz' || exit 1`
 - [x] Includes `ca-certificates` in the runtime image to allow secure HTTPS connections
 - [x] Use multi-stage builds to reduce the size of the final image
@@ -140,10 +140,10 @@ Read on to see runtime-specific examples and how to configure the generated Dock
   - `.mise.toml` - `bun = "{VERSION}"`
 
 #### Runtime Image
-`oven/bun:${VERSION}-slim`
+`oven/bun:${BUN_VERSION}-slim`
 
 #### Build Args
-  - `VERSION` - The version of Bun to install (default: `1`)
+  - `BUN_VERSION` - The version of Bun to install (default: `1`)
   - `INSTALL_CMD` - The command to install dependencies (default: `bun install`)
   - `BUILD_CMD` - The command to build the project (default: detected from `package.json`)
   - `START_CMD` - The command to start the project (default: detected from `package.json`)
@@ -180,7 +180,7 @@ Detected in order of precedence:
 `debian:stable-slim`
 
 #### Build Args
-  - `VERSION` - The version of Deno to install (default: `latest`)
+  - `DENO_VERSION` - The version of Deno to install (default: `latest`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from `deno.jsonc` and source code)
   - `START_CMD` - The command to start the project (default: detected from `deno.jsonc` and source code)
 
@@ -216,7 +216,7 @@ Detected in order of precedence:
 `debian:stable-slim`
 
 #### Build Args
-  - `VERSION` - The version of Elixir to install (default: `1.12`)
+  - `ELIXIR_VERSION` - The version of Elixir to install (default: `1.17`)
   - `OTP_VERSION` - The version of Erlang to install (default: `26.2.5`)
   - `BIN_NAME` - The name of the release binary (default: detected via app name in `mix.exs`)
 
@@ -239,10 +239,10 @@ Detected in order of precedence:
   - `go.mod` - `go {VERSION}`
 
 #### Runtime Image
-`debian:stable-slim`
+`alpine:latest`
 
 #### Build Args
-  - `VERSION` - The version of Go to install (default: `1.17`)
+  - `GO_VERSION` - The version of Go to install (default: `1.24`)
   - `TARGETOS` - The target OS for the build (default: `linux`)
   - `TARGETARCH` - The target architecture for the build (default: `amd64`)
   - `CGO_ENABLED` - Enable CGO for the build (default: `0`)
@@ -254,7 +254,7 @@ Detected in order of precedence:
   - `main.go` file in the root directory
 
 #### Install Command
-`if [ -f go.mod ]; then go mod download; fi`
+`if [ -f go.mod ]; then go mod download && go mod tidy; fi`
 
 #### Build Command
 `CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"`
@@ -278,10 +278,10 @@ Maven version:
   - `.tool-versions` - `maven {VERSION}`
 
 #### Runtime Image
-`eclipse-temurin:${VERSION}-jdk`
+`eclipse-temurin:${JAVA_VERSION}-jdk`
 
 #### Build Args
-  - `VERSION` - The version of the JDK to install (default: `17`)
+  - `JAVA_VERSION` - The version of the JDK to install (default: `17`)
   - `MAVEN_VERSION` - The version of Maven to install (default: `3`)
   - `JAVA_OPTS` - The Java options to pass to the JVM (default: `-Xmx512m -Xms256m`)
   - `BUILD_CMD` - The command to build the project (default: best guess via source code)
@@ -316,10 +316,10 @@ Maven version:
   - `package.json` - `"engines": {"node": "{VERSION}"}`
 
 #### Runtime Image
-`node:${VERSION}-slim`
+`node:${NODE_VERSION}-slim`
 
 #### Build Args
-  - `VERSION` - The version of Node.js to install (default: `lts`)
+  - `NODE_VERSION` - The version of Node.js to install (default: `lts`)
 
 #### Install Command
 ```sh
@@ -361,10 +361,10 @@ fi
   - `.node-version` - `v{VERSION}`
 
 #### Runtime Image
-`node:${VERSION}-slim`
+`node:${NODE_VERSION}-slim`
 
 #### Build Args
-  - `VERSION` - The version of Node.js to install (default: `lts`)
+  - `NODE_VERSION` - The version of Node.js to install (default: `lts`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
@@ -399,10 +399,10 @@ In order of precedence:
   - `composer.json` - `"php": "{VERSION}"`
 
 #### Runtime Image
-`php:${VERSION}-apache`
+`php:${PHP_VERSION}-apache`
 
 #### Build Args
-  - `VERSION` - The version of PHP to install (default: `8.3`)
+  - `PHP_VERSION` - The version of PHP to install (default: `8.3`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected via source code)
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
@@ -446,10 +446,10 @@ In order of precedence:
   - `runtime.txt` - `python-{VERSION}`
 
 #### Runtime Image
-`python:${VERSION}-slim`
+`python:${PYTHON_VERSION}-slim`
 
 #### Build Args
-  - `VERSION` - The version of Python to install (default: `3.10`)
+  - `PYTHON_VERSION` - The version of Python to install (default: `3.12`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
 
@@ -487,10 +487,10 @@ In order of precedence:
   - `Gemfile` - `ruby '{VERSION}'`
 
 #### Runtime Image
-`ruby:${VERSION}-slim`
+`ruby:${RUBY_VERSION}-slim`
 
 #### Build Args
-  - `VERSION` - The version of Ruby to install (default: `3.0`)
+  - `RUBY_VERSION` - The version of Ruby to install (default: `3.3`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)

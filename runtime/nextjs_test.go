@@ -51,12 +51,12 @@ func TestNextJSGenerateDockerfile(t *testing.T) {
 		{
 			name:     "NextJS project",
 			path:     "../testdata/nextjs",
-			expected: []any{`ARG VERSION=lts`, `CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]`},
+			expected: []any{`ARG NODE_VERSION=lts`, `CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]`},
 		},
 		{
 			name:     "NextJS project with standalone output",
 			path:     "../testdata/nextjs-standalone",
-			expected: []any{`ARG VERSION=16.0.0`, `CMD HOSTNAME="0.0.0.0" node server.js`},
+			expected: []any{`ARG NODE_VERSION=16.0.0`, `CMD HOSTNAME="0.0.0.0" node server.js`},
 		},
 		{
 			name: "NextJS project with build mounts",
@@ -75,7 +75,7 @@ func TestNextJSGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a NextJS project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=lts`, `CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]`},
+			expected: []any{`ARG NODE_VERSION=lts`, `CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]`},
 		},
 	}
 

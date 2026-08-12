@@ -146,7 +146,7 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 }
 
 var phpTemplate = strings.TrimSpace(`
-ARG VERSION={{.Version}}
+ARG PHP_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/composer
 FROM ${BUILDER}:lts as build
 RUN apk add --no-cache nodejs npm
@@ -158,7 +158,7 @@ ARG BUILD_CMD={{.BuildCMD}}
 RUN {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
 RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
 
-FROM php:${VERSION}-apache AS runtime
+FROM php:${PHP_VERSION}-apache AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true

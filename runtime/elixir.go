@@ -87,10 +87,10 @@ func (d *Elixir) GenerateDockerfile(path string, data ...map[string]string) ([]b
 }
 
 var elixirTemplate = strings.TrimSpace(`
-ARG VERSION={{.ElixirVersion}}
+ARG ELIXIR_VERSION={{.ElixirVersion}}
 ARG OTP_VERSION={{.OTPVersion}}
 ARG BUILDER=docker.io/library/elixir
-FROM ${BUILDER}:${VERSION}-otp-${OTP_VERSION}-slim AS build
+FROM ${BUILDER}:${ELIXIR_VERSION}-otp-${OTP_VERSION}-slim AS build
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y build-essential git \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
@@ -200,7 +200,7 @@ func findElixirVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	if version == "" {
-		version = "1.12"
+		version = "1.17"
 		log.Info(fmt.Sprintf("No Elixir version detected. Using: %s", version))
 	}
 

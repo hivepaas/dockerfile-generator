@@ -66,7 +66,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project",
 			path: "../testdata/python",
 			expected: []any{
-				`ARG VERSION=3.12`,
+				`ARG PYTHON_VERSION=3.12`,
 				`ARG INSTALL_CMD="pip install --no-cache -r requirements.txt"`,
 				`ARG START_CMD="python main.py"`,
 			},
@@ -75,7 +75,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project w/ mise",
 			path: "../testdata/python-mise",
 			expected: []any{
-				`ARG VERSION=3.8`,
+				`ARG PYTHON_VERSION=3.8`,
 				`ARG INSTALL_CMD="pip install --no-cache -r requirements.txt"`,
 				`ARG START_CMD="python main.py"`,
 			},
@@ -84,7 +84,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project with django",
 			path: "../testdata/python-django",
 			expected: []any{
-				`ARG VERSION=3.6.0`,
+				`ARG PYTHON_VERSION=3.6.0`,
 				`ARG INSTALL_CMD="pip install pipenv && pipenv install --dev --system --deploy"`,
 				`ARG START_CMD="python manage.py runserver 0.0.0.0:${PORT}"`,
 			},
@@ -93,7 +93,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project with pdm",
 			path: "../testdata/python-pdm",
 			expected: []any{
-				`ARG VERSION=3.4.1`,
+				`ARG PYTHON_VERSION=3.4.1`,
 				`ARG INSTALL_CMD="pip install pdm && pdm install --prod"`,
 				`ARG START_CMD="python app.py"`,
 			},
@@ -102,7 +102,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project with poetry",
 			path: "../testdata/python-poetry",
 			expected: []any{
-				`ARG VERSION=3.8.5`,
+				`ARG PYTHON_VERSION=3.8.5`,
 				`ARG INSTALL_CMD="pip install poetry && poetry install --no-dev --no-ansi --no-root"`,
 				`ARG START_CMD="python app/main.py"`,
 			},
@@ -111,7 +111,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project with pyproject",
 			path: "../testdata/python-pyproject",
 			expected: []any{
-				`ARG VERSION=3.12`,
+				`ARG PYTHON_VERSION=3.12`,
 				`ARG INSTALL_CMD="pip install --upgrade build setuptools && pip install .`,
 				`ARG START_CMD="python -m pyproject"`,
 			},
@@ -120,7 +120,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Python project with FastAPI",
 			path: "../testdata/python-fastapi",
 			expected: []any{
-				`ARG VERSION=3.6.0`,
+				`ARG PYTHON_VERSION=3.6.0`,
 				`ARG INSTALL_CMD="pip install pipenv && pipenv install --dev --system --deploy"`,
 				`ARG START_CMD="fastapi run main.py --port ${PORT}"`,
 			},
@@ -129,7 +129,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			name: "Not a Python project",
 			path: "../testdata/deno",
 			expected: []any{
-				`ARG VERSION=3.12`,
+				`ARG PYTHON_VERSION=3.12`,
 				regexp.MustCompile(`^ARG INSTALL_CMD=$`),
 				regexp.MustCompile(`^ARG START_CMD=$`),
 			},

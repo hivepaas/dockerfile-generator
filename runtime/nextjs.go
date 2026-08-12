@@ -107,9 +107,9 @@ func (d *NextJS) GenerateDockerfile(path string, data ...map[string]string) ([]b
 }
 
 var nextJSStandaloneTemplate = strings.TrimSpace(`
-ARG VERSION={{.Version}}
+ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
-FROM ${BUILDER}:${VERSION}-slim AS base
+FROM ${BUILDER}:${NODE_VERSION}-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -177,9 +177,9 @@ CMD HOSTNAME="0.0.0.0" node server.js
 `)
 
 var nextJSServerTemplate = strings.TrimSpace(`
-ARG VERSION=lts
+ARG NODE_VERSION=lts
 ARG BUILDER=docker.io/library/node
-FROM ${BUILDER}:${VERSION}-slim AS base
+FROM ${BUILDER}:${NODE_VERSION}-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps

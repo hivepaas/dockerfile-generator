@@ -173,9 +173,9 @@ func safeCommand(cmd string) string {
 var startScriptRe = regexp.MustCompile(`^.*?\b(ts-)?node(mon)?\b.*?(index|main|server|client)\.([cm]?[tj]s)\b`)
 
 var nodeTemplate = strings.TrimSpace(`
-ARG VERSION={{.Version}}
+ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
-FROM ${BUILDER}:${VERSION}-slim AS base
+FROM ${BUILDER}:${NODE_VERSION}-slim AS base
 RUN corepack enable
 
 FROM base AS deps

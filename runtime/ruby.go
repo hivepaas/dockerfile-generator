@@ -137,9 +137,9 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 }
 
 var rubyTemplate = strings.TrimSpace(`
-ARG VERSION={{.Version}}
+ARG RUBY_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/ruby
-FROM ${BUILDER}:${VERSION}-slim
+FROM ${BUILDER}:${RUBY_VERSION}-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
@@ -273,7 +273,7 @@ func findRubyVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	if version == "" {
-		version = "3.1"
+		version = "3.3"
 		log.Info(fmt.Sprintf("No Ruby version detected. Using: %s", version))
 	}
 

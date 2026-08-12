@@ -62,7 +62,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			name: "Ruby project",
 			path: "../testdata/ruby",
 			expected: []any{
-				`ARG VERSION=2.0.0`,
+				`ARG RUBY_VERSION=2.0.0`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
 				regexp.MustCompile(`^ARG BUILD_CMD=$`),
 				regexp.MustCompile(`^ARG START_CMD=$`),
@@ -72,7 +72,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			name: "Ruby project w/ mise",
 			path: "../testdata/ruby-mise",
 			expected: []any{
-				`ARG VERSION=2.7`,
+				`ARG RUBY_VERSION=2.7`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
 				regexp.MustCompile(`^ARG BUILD_CMD=$`),
 				regexp.MustCompile(`^ARG START_CMD=$`),
@@ -82,7 +82,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			name: "Ruby project with config/environment.rb",
 			path: "../testdata/ruby-config-environment",
 			expected: []any{
-				`ARG VERSION=3.0.1`,
+				`ARG RUBY_VERSION=3.0.1`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
 				regexp.MustCompile(`^ARG BUILD_CMD=$`),
 				`ARG START_CMD="bundle exec ruby script/server"`,
@@ -92,7 +92,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			name: "Ruby project with config.ru",
 			path: "../testdata/ruby-config-ru",
 			expected: []any{
-				`ARG VERSION=2.3.0`,
+				`ARG RUBY_VERSION=2.3.0`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
 				regexp.MustCompile(`^ARG BUILD_CMD=$`),
 				`ARG START_CMD="bundle exec rackup config.ru -p ${PORT}"`,
@@ -116,7 +116,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			name: "Ruby project with rails",
 			path: "../testdata/ruby-rails",
 			expected: []any{
-				`ARG VERSION=3.1`,
+				`ARG RUBY_VERSION=3.3`,
 				`ARG INSTALL_CMD="bundle install && corepack enable pnpm && pnpm i --frozen-lockfile"`,
 				`ARG BUILD_CMD="bundle exec rake assets:precompile"`,
 				`ARG START_CMD="bundle exec rails server -b 0.0.0.0 -p ${PORT}`,
@@ -125,7 +125,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a Ruby project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=3.1`, regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
+			expected: []any{`ARG RUBY_VERSION=3.3`, regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
 		},
 	}
 

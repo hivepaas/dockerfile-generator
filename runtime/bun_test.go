@@ -51,17 +51,17 @@ func TestBunGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Bun project",
 			path:     "../testdata/bun",
-			expected: []any{`ARG VERSION=1`, `ARG INSTALL_CMD="bun install"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="bun index.ts"`},
+			expected: []any{`ARG BUN_VERSION=1`, `ARG INSTALL_CMD="bun install"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="bun index.ts"`},
 		},
 		{
 			name:     "Bun project w/ mise",
 			path:     "../testdata/bun-mise",
-			expected: []any{`ARG VERSION=1.1.3`, `ARG INSTALL_CMD="bun install"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="bun index.ts"`},
+			expected: []any{`ARG BUN_VERSION=1.1.3`, `ARG INSTALL_CMD="bun install"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="bun index.ts"`},
 		},
 		{
 			name:     "Bun project with .ts file",
 			path:     "../testdata/bun-bunfig",
-			expected: []any{`ARG VERSION=1.1.4`, `ARG INSTALL_CMD="bun install"`, `ARG BUILD_CMD="bun run build:prod"`, `ARG START_CMD="bun run start:production"`},
+			expected: []any{`ARG BUN_VERSION=1.1.4`, `ARG INSTALL_CMD="bun install"`, `ARG BUILD_CMD="bun run build:prod"`, `ARG START_CMD="bun run start:production"`},
 		},
 		{
 			name: "Bun project with build mounts",
@@ -80,7 +80,7 @@ func TestBunGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a Bun project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=1`, regexp.MustCompile(`^ARG INSTALL_CMD="bun install"`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
+			expected: []any{`ARG BUN_VERSION=1`, regexp.MustCompile(`^ARG INSTALL_CMD="bun install"`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
 		},
 	}
 

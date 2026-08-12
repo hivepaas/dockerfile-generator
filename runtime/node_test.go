@@ -56,27 +56,27 @@ func TestNodeGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Node project",
 			path:     "../testdata/node",
-			expected: []any{`ARG VERSION=lts`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
+			expected: []any{`ARG NODE_VERSION=lts`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
 		},
 		{
 			name:     "Node project w/ mise",
 			path:     "../testdata/node-mise",
-			expected: []any{`ARG VERSION=14`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
+			expected: []any{`ARG NODE_VERSION=14`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
 		},
 		{
 			name:     "Node project with engines",
 			path:     "../testdata/node-engines",
-			expected: []any{`ARG VERSION=14.5`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
+			expected: []any{`ARG NODE_VERSION=14.5`, `ARG INSTALL_CMD="npm ci"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="node index.ts"`},
 		},
 		{
 			name:     "Node project with pnpm",
 			path:     "../testdata/node-pnpm",
-			expected: []any{`ARG VERSION=16.0.0`, `ARG INSTALL_CMD="pnpm i --frozen-lockfile"`, `ARG BUILD_CMD="pnpm run build:prod"`, `ARG START_CMD="pnpm run start:production"`},
+			expected: []any{`ARG NODE_VERSION=16.0.0`, `ARG INSTALL_CMD="pnpm i --frozen-lockfile"`, `ARG BUILD_CMD="pnpm run build:prod"`, `ARG START_CMD="pnpm run start:production"`},
 		},
 		{
 			name:     "Node project with yarn",
 			path:     "../testdata/node-yarn",
-			expected: []any{`ARG VERSION=16.0.0`, `ARG INSTALL_CMD="yarn --frozen-lockfile"`, `ARG BUILD_CMD="yarn run build:prod"`, `ARG START_CMD="yarn run start-it"`},
+			expected: []any{`ARG NODE_VERSION=16.0.0`, `ARG INSTALL_CMD="yarn --frozen-lockfile"`, `ARG BUILD_CMD="yarn run build:prod"`, `ARG START_CMD="yarn run start-it"`},
 		},
 		{
 			name: "Node project with build mounts",
@@ -95,7 +95,7 @@ func TestNodeGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a Node project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=lts`, regexp.MustCompile(`^ARG INSTALL_CMD="npm ci"`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
+			expected: []any{`ARG NODE_VERSION=lts`, regexp.MustCompile(`^ARG INSTALL_CMD="npm ci"`), regexp.MustCompile(`^ARG BUILD_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
 		},
 	}
 

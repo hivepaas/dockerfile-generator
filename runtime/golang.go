@@ -102,10 +102,11 @@ func (d *Golang) GenerateDockerfile(path string, data ...map[string]string) ([]b
 }
 
 var golangTemplate = strings.TrimSpace(`
-ARG VERSION={{.Version}}
+ARG GO_VERSION={{.Version}}
 ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/golang
-FROM --platform=${BUILDPLATFORM} ${BUILDER}:${VERSION} AS base
+FROM --platform=${BUILDPLATFORM} ${BUILDER}:${GO_VERSION}-alpine AS base
+RUN apk add --no-cache ca-certificates git tzdata
 
 FROM base AS deps 
 WORKDIR /go/src/app
@@ -124,6 +125,7 @@ ARG PACKAGE={{.Package}}
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ARG CGO_ENABLED=0
+RUN if [ "${CGO_ENABLED}" = "1" ]; then apk add --no-cache build-base; fi
 # -trimpath removes the absolute path to the source code in the binary
 # -ldflags="-s -w" removes the symbol table and debug information from the binary
 RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"

@@ -50,22 +50,22 @@ func TestGolangGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Golang project",
 			path:     "../testdata/go",
-			expected: []any{`ARG VERSION=1.16.3`, `ARG PACKAGE=./main.go`},
+			expected: []any{`ARG GO_VERSION=1.16.3`, `ARG PACKAGE=./main.go`},
 		},
 		{
 			name:     "Golang project w/ mise",
 			path:     "../testdata/go-mise",
-			expected: []any{`ARG VERSION=1.16`, `ARG PACKAGE=./main.go`},
+			expected: []any{`ARG GO_VERSION=1.16`, `ARG PACKAGE=./main.go`},
 		},
 		{
 			name:     "Golang project with go.mod file",
 			path:     "../testdata/go-mod",
-			expected: []any{`ARG VERSION=1.22.3`, `ARG PACKAGE=./cmd/hello`},
+			expected: []any{`ARG GO_VERSION=1.22.3`, `ARG PACKAGE=./cmd/hello`},
 		},
 		{
 			name:     "Not a Golang project",
 			path:     "../testdata/ruby",
-			expected: []any{`ARG VERSION=1.17`, regexp.MustCompile(`^ARG PACKAGE=$`)},
+			expected: []any{`ARG GO_VERSION=1.24`, regexp.MustCompile(`^ARG PACKAGE=$`)},
 		},
 	}
 

@@ -51,17 +51,17 @@ func TestDenoGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Deno project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG VERSION=latest`, `ARG INSTALL_CMD="deno cache main.ts"`, `ARG START_CMD="deno run --allow-all main.ts"`},
+			expected: []any{`ARG DENO_VERSION=latest`, `ARG INSTALL_CMD="deno cache main.ts"`, `ARG START_CMD="deno run --allow-all main.ts"`},
 		},
 		{
 			name:     "Deno project w/ mise",
 			path:     "../testdata/deno-mise",
-			expected: []any{`ARG VERSION=1.43.2`, `ARG INSTALL_CMD="deno cache main.ts"`, `ARG START_CMD="deno run --allow-all main.ts"`},
+			expected: []any{`ARG DENO_VERSION=1.43.2`, `ARG INSTALL_CMD="deno cache main.ts"`, `ARG START_CMD="deno run --allow-all main.ts"`},
 		},
 		{
 			name:     "Deno project with .ts file",
 			path:     "../testdata/deno-jsonc",
-			expected: []any{`ARG VERSION=1.43.3`, `ARG INSTALL_CMD="deno task cache"`, `ARG START_CMD="deno task start"`},
+			expected: []any{`ARG DENO_VERSION=1.43.3`, `ARG INSTALL_CMD="deno task cache"`, `ARG START_CMD="deno task start"`},
 		},
 		{
 			name: "Deno project with install mounts",
@@ -73,7 +73,7 @@ func TestDenoGenerateDockerfile(t *testing.T) {
 		{
 			name:     "Not a Deno project",
 			path:     "../testdata/ruby",
-			expected: []any{`ARG VERSION=latest`, regexp.MustCompile(`^ARG INSTALL_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
+			expected: []any{`ARG DENO_VERSION=latest`, regexp.MustCompile(`^ARG INSTALL_CMD=$`), regexp.MustCompile(`^ARG START_CMD=$`)},
 		},
 	}
 
