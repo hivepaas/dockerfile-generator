@@ -22,6 +22,7 @@
 ## Supported Runtimes
 
 - [Bun](#bun)
+- [C / C++](#c--c)
 - [C# / .NET](#c--net)
 - [Dart](#dart)
 - [Deno](#deno)
@@ -38,7 +39,6 @@
 
 ### Additional runtimes we'd like to support
 
-- C++
 - Scala
 - Zig
 
@@ -162,6 +162,37 @@ Detected in order of precedence:
 Detected in order of precedence:
   - `package.json` scripts: `"serve", "start:prod", "start:production", "start-prod", "start-production", "preview", "start"`
   - `package.json` main/module file: `bun run ${mainFile}`
+
+---
+
+### C / C++
+
+[C/C++](https://isocpp.org/) is a powerful, high-performance general-purpose programming language.
+
+#### Detected Files
+  - `CMakeLists.txt`
+  - `Makefile`, `makefile`, `GNUmakefile`
+  - `meson.build`
+  - `main.cpp`, `main.cc`, `main.cxx`, `main.c`, `app.cpp`, `app.c`
+
+#### Runtime Image
+`alpine:latest`
+
+#### Build Args
+  - `BUILD_CMD` - The command to compile the executable (default: auto-detected from `CMakeLists.txt`, `Makefile`, or source files)
+  - `RUNNER` - The base runtime image (default: `docker.io/library/alpine:latest`)
+  - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
+  - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
+
+#### Build Command
+Detected in order of precedence:
+  - `CMakeLists.txt`: `cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build && cp $(find build -maxdepth 2 -type f -executable | head -n 1) /app_bin`
+  - `Makefile`: `make && cp $(find . -maxdepth 1 -type f -executable ! -name "*.sh" ! -name "Makefile*" | head -n 1) /app_bin`
+  - `main.cpp`: `g++ -O3 -o /app_bin main.cpp`
+  - `main.c`: `gcc -O3 -o /app_bin main.c`
+
+#### Start Command
+`["/app/app"]`
 
 ---
 

@@ -26,5 +26,6 @@ const (
 	RuntimeNameNode   RuntimeName = "Node"
 	RuntimeNameDotNet RuntimeName = "DotNet"
 	RuntimeNameDart   RuntimeName = "Dart"
+	RuntimeNameCpp    RuntimeName = "C++"
 	RuntimeNameStatic RuntimeName = "Static"
 )
