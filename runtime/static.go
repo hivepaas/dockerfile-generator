@@ -75,9 +75,14 @@ ARG VERSION=2
 ARG BUILDER=docker.io/joseluisq/static-web-server
 ARG RUNNER=${BUILDER}:${VERSION}-debian
 FROM ${RUNNER}
+# The image runs its server as its own user, sws: packages are installed as
+# root, and the server runs as that user again - as root on an image older
+# than the user, which does not set SERVER_USER_ID.
+USER root
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 COPY . .
+USER ${SERVER_USER_ID:-0}:${SERVER_GROUP_ID:-0}
 
 ENV PORT=8080
 EXPOSE ${PORT}

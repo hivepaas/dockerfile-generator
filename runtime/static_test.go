@@ -58,9 +58,13 @@ func TestStaticGenerateDockerfile(t *testing.T) {
 		expected []any
 	}{
 		{
-			name:     "Static project",
-			path:     "../testdata/static",
-			expected: []any{`ARG SERVER_ROOT=.`},
+			name: "Static project",
+			path: "../testdata/static",
+			expected: []any{
+				`ARG SERVER_ROOT=.`,
+				`USER root`,
+				`USER ${SERVER_USER_ID:-0}:${SERVER_GROUP_ID:-0}`,
+			},
 		},
 		{
 			name:     "Static project with public directory",

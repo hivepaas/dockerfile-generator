@@ -63,6 +63,8 @@ func TestAstroGenerateDockerfile(t *testing.T) {
 				`ARG NODE_VERSION=lts`,
 				`joseluisq/static-web-server`,
 				`/public`,
+				`USER root`,
+				`USER ${SERVER_USER_ID:-0}:${SERVER_GROUP_ID:-0}`,
 			},
 		},
 		{

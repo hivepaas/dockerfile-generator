@@ -233,12 +233,17 @@ RUN --mount=type=cache,target=/app/.nuxt \
   else npm run generate; fi
 
 FROM ${RUNNER} AS runtime
+# The image runs its server as its own user, sws: packages are installed as
+# root, and the server runs as that user again - as root on an image older
+# than the user, which does not set SERVER_USER_ID.
+USER root
 
 ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Nuxt generate outputs to .output/public
 COPY --from=builder /app/.output/public /public
+USER ${SERVER_USER_ID:-0}:${SERVER_GROUP_ID:-0}
 
 ENV SERVER_PORT=8080
 ENV SERVER_ROOT=/public
