@@ -10,8 +10,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 type PHP struct {
@@ -62,7 +65,15 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 	installCMD := ""
 	if _, err := os.Stat(filepath.Join(path, "composer.json")); err == nil {
 		d.Log.Info("Detected composer.json file")
-		installCMD = "composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"
+		// The build's image is not the one the app runs on: its extensions are
+		// the runtime image's business, and so is its PHP when composer.lock
+		// fixed the packages, which composer's platform check verifies as the
+		// app starts
+		ignore := "'--ignore-platform-req=ext-*'"
+		if _, err := os.Stat(filepath.Join(path, "composer.lock")); err == nil {
+			ignore = "--ignore-platform-reqs"
+		}
+		installCMD = "composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction " + ignore
 	}
 
 	packageManager := ""
@@ -140,6 +151,7 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 	templateData := map[string]string{
 		"Version":      *version,
 		"DocumentRoot": documentRoot,
+		"Extensions":   strings.Join(phpExtensions(path, d.Log), " "),
 		"InstallCMD":   safeCommand(installCMD),
 		"BuildCMD":     safeCommand(buildCMD),
 		"StartCMD":     safeCommand(startCMD),
@@ -179,6 +191,11 @@ RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 # PHP's production settings: errors are logged, not shown to the visitor
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+# PHP's extensions: the database drivers, OPcache, and those composer.json and
+# composer.lock require. One the image has already is left as it is.
+ARG PHP_EXTENSIONS="{{.Extensions}}"
+COPY --from=docker.io/mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
+RUN if [ -n "${PHP_EXTENSIONS}" ]; then install-php-extensions ${PHP_EXTENSIONS}; fi
 
 ENV PORT=8080
 EXPOSE ${PORT}
@@ -246,26 +263,7 @@ func findPHPVersion(path string, log *slog.Logger) (*string, error) {
 				if err != nil {
 					return nil, fmt.Errorf("Failed to read composer.json file")
 				}
-
-				if require, ok := composerJSON["require"].(map[string]interface{}); ok {
-					if php, ok := require["php"].(string); ok {
-						// Version can be a range, e.g. ">=7.2" so we need to extract the version
-						if gteVersionRe.MatchString(php) {
-							version = gteVersionRe.FindStringSubmatch(php)[1]
-						} else if rangeVersionRe.MatchString(php) {
-							version = rangeVersionRe.FindStringSubmatch(php)[2]
-						} else if tildeVersionRe.MatchString(php) {
-							version = tildeVersionRe.FindStringSubmatch(php)[1]
-						} else if caretVersionRe.MatchString(php) {
-							version = caretVersionRe.FindStringSubmatch(php)[1]
-						} else if exactVersionRe.MatchString(php) {
-							version = exactVersionRe.FindStringSubmatch(php)[1]
-						}
-
-						version = strings.TrimSuffix(version, ".")
-						log.Info("Detected PHP version from composer.json: " + version)
-					}
-				}
+				version = composerPHPVersion(path, composerJSON, log)
 			}
 
 			f.Close()
@@ -283,6 +281,67 @@ func findPHPVersion(path string, log *slog.Logger) (*string, error) {
 	return &version, nil
 }
 
+// phpDefaultExtensions are installed for every PHP app: its database drivers,
+// which no package requires, and OPcache.
+var phpDefaultExtensions = []string{"opcache", "pdo_mysql", "pdo_pgsql"}
+
+// phpCoreExtensions are part of PHP itself, never installed.
+var phpCoreExtensions = map[string]bool{
+	"core": true, "date": true, "hash": true, "json": true, "libxml": true, "pcre": true,
+	"random": true, "reflection": true, "spl": true, "standard": true,
+}
+
+var phpExtensionNameRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+
+// phpExtensions are the extensions an app needs: the defaults, and the ext-*
+// that composer.json and composer.lock's packages require.
+func phpExtensions(path string, log *slog.Logger) []string {
+	required := map[string]bool{}
+	collect := func(require map[string]interface{}) {
+		for name := range require {
+			ext, ok := strings.CutPrefix(strings.ToLower(name), "ext-")
+			if !ok {
+				continue
+			}
+			ext = strings.ReplaceAll(ext, "-", "_")
+			if ext == "zend_opcache" {
+				ext = "opcache"
+			}
+			if phpExtensionNameRe.MatchString(ext) && !phpCoreExtensions[ext] {
+				required[ext] = true
+			}
+		}
+	}
+
+	var composerJSON struct {
+		Require map[string]interface{} `json:"require"`
+	}
+	if content, err := os.ReadFile(filepath.Join(path, "composer.json")); err == nil {
+		if json.Unmarshal(content, &composerJSON) == nil {
+			collect(composerJSON.Require)
+		}
+	}
+	var lock struct {
+		Packages []struct {
+			Require map[string]interface{} `json:"require"`
+		} `json:"packages"`
+	}
+	if content, err := os.ReadFile(filepath.Join(path, "composer.lock")); err == nil {
+		if json.Unmarshal(content, &lock) == nil {
+			for _, pkg := range lock.Packages {
+				collect(pkg.Require)
+			}
+		}
+	}
+
+	for _, ext := range phpDefaultExtensions {
+		required[ext] = true
+	}
+	extensions := slices.Sorted(maps.Keys(required))
+	log.Info("PHP extensions: " + strings.Join(extensions, " "))
+	return extensions
+}
+
 // hasBunLock tells whether a project has Bun's lockfile: bun.lock, or bun.lockb
 // before Bun 1.2.
 func hasBunLock(path string) bool {
@@ -292,6 +351,82 @@ func hasBunLock(path string) bool {
 		}
 	}
 	return false
+}
+
+// phpLatestMajor is the newest major PHP has released: a constraint that
+// allows it takes its newest minor, the image's "8".
+const phpLatestMajor = 8
+
+// composerPHPVersion is the PHP that composer.json and composer.lock run on:
+// config.platform.php, the version the project resolves its dependencies for,
+// or else the newest that composer.json and every locked package allow. A
+// lock written on a newer PHP than composer.json's minimum often needs it.
+func composerPHPVersion(path string, composerJSON map[string]interface{}, log *slog.Logger) string {
+	if config, ok := composerJSON["config"].(map[string]interface{}); ok {
+		if platform, ok := config["platform"].(map[string]interface{}); ok {
+			if php, ok := platform["php"].(string); ok {
+				if v, err := semver.NewVersion(php); err == nil {
+					log.Info("Detected PHP version in composer.json's config.platform: " + php)
+					return fmt.Sprintf("%d.%d", v.Major(), v.Minor())
+				}
+			}
+		}
+	}
+
+	var constraints []*semver.Constraints
+	if require, ok := composerJSON["require"].(map[string]interface{}); ok {
+		if php, ok := require["php"].(string); ok {
+			if c, err := composerConstraint(php); err == nil {
+				constraints = append(constraints, c)
+			}
+		}
+	}
+	if len(constraints) == 0 {
+		return ""
+	}
+	locked := lockedPHPConstraints(path)
+	constraints = append(constraints, locked...)
+
+	tag, ok := newestAllowed(func(v *semver.Version) bool {
+		for _, c := range constraints {
+			if !c.Check(v) {
+				return false
+			}
+		}
+		return true
+	}, phpLatestMajor)
+	if !ok {
+		log.Warn("No PHP version satisfies composer.json and composer.lock together")
+		return ""
+	}
+	log.Info(fmt.Sprintf("Detected PHP version from composer.json and %d locked packages: %s", len(locked), tag))
+	return tag
+}
+
+// lockedPHPConstraints are the PHP versions composer.lock's packages require -
+// not its development ones, which are not installed.
+func lockedPHPConstraints(path string) []*semver.Constraints {
+	content, err := os.ReadFile(filepath.Join(path, "composer.lock"))
+	if err != nil {
+		return nil
+	}
+	var lock struct {
+		Packages []struct {
+			Require map[string]string `json:"require"`
+		} `json:"packages"`
+	}
+	if err := json.Unmarshal(content, &lock); err != nil {
+		return nil
+	}
+	var constraints []*semver.Constraints
+	for _, pkg := range lock.Packages {
+		if php, ok := pkg.Require["php"]; ok {
+			if c, err := composerConstraint(php); err == nil {
+				constraints = append(constraints, c)
+			}
+		}
+	}
+	return constraints
 }
 
 var gteVersionRe = regexp.MustCompile(`^>=\s*([\d.]+)`)

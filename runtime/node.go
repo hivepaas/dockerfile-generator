@@ -240,16 +240,6 @@ func findNodeVersion(path string, log *slog.Logger) (*string, error) {
 		"package.json",
 	}
 
-	// This is really jank but it should be fine
-	nodeVersionsToCheck := []string{}
-	for i := 0; i < 60; i++ {
-		for j := 0; j < 60; j++ {
-			for k := 0; k < 60; k++ {
-				nodeVersionsToCheck = append(nodeVersionsToCheck, fmt.Sprintf("%d.%d.%d", i, j, k))
-			}
-		}
-	}
-
 	for _, file := range versionFiles {
 		fp := filepath.Join(path, file)
 		_, err := os.Stat(fp)
@@ -271,27 +261,8 @@ func findNodeVersion(path string, log *slog.Logger) (*string, error) {
 
 				if engines, ok := packageJSON["engines"].(map[string]interface{}); ok {
 					if nodeVersion, ok := engines["node"].(string); ok {
-						ver, err := semver.NewVersion(nodeVersion)
-						if err != nil {
-							constraints, err := semver.NewConstraint(nodeVersion)
-							if err != nil {
-								continue
-							}
-
-							for _, v := range nodeVersionsToCheck {
-								semv, _ := semver.NewVersion(v)
-								if constraints.Check(semv) {
-									ver = semv
-									break
-								}
-							}
-						}
-						if ver != nil {
-							if ver.Minor() > 0 {
-								version = fmt.Sprintf("%d.%d", ver.Major(), ver.Minor())
-							} else {
-								version = fmt.Sprint(ver.Major())
-							}
+						if tag := nodeVersionTag(nodeVersion); tag != "" {
+							version = tag
 							log.Info("Detected Node version in package.json: " + version)
 							break
 						}
@@ -334,16 +305,13 @@ func findNodeVersion(path string, log *slog.Logger) (*string, error) {
 			case ".nvmrc", ".node-version":
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
-					line := scanner.Text()
-					if strings.HasPrefix(line, "v") {
-						version = strings.TrimPrefix(line, "v")
-						log.Info("Detected Node version in " + file + ": " + version)
-						break
-					} else {
-						version = line
-						log.Info("Detected Node version in " + file + ": " + version)
-						break
+					line := strings.TrimSpace(scanner.Text())
+					if line == "" || strings.HasPrefix(line, "#") {
+						continue
 					}
+					version = nvmVersionTag(line)
+					log.Info("Detected Node version in " + file + ": " + version)
+					break
 				}
 
 				if err := scanner.Err(); err != nil {
@@ -368,4 +336,33 @@ func findNodeVersion(path string, log *slog.Logger) (*string, error) {
 
 type MiseToml struct {
 	Tools map[string]interface{} `toml:"tools"`
+}
+
+// nodeVersionTag is the image tag for package.json's engines.node: lts when
+// it allows any version from some one on, otherwise the newest it allows. ""
+// when it is not a constraint.
+func nodeVersionTag(constraint string) string {
+	c, err := semver.NewConstraint(constraint)
+	if err != nil {
+		return ""
+	}
+	if c.Check(semver.New(999, 0, 0, "", "")) {
+		return "lts"
+	}
+	tag, _ := newestAllowed(c.Check, 40)
+	return tag
+}
+
+// nvmVersionTag is the image tag for a line of .nvmrc: "v22" is 22, "lts/*"
+// lts, "lts/jod" the image's jod, and "node" the current release.
+func nvmVersionTag(line string) string {
+	switch {
+	case line == "node" || line == "current" || line == "latest":
+		return "current"
+	case line == "lts/*":
+		return "lts"
+	case strings.HasPrefix(line, "lts/"):
+		return strings.ToLower(strings.TrimPrefix(line, "lts/"))
+	}
+	return strings.TrimPrefix(line, "v")
 }

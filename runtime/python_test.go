@@ -85,7 +85,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			path: "../testdata/python-django",
 			expected: []any{
 				`ARG PYTHON_VERSION=3.6.0`,
-				`ARG INSTALL_CMD="pip install pipenv && pipenv install --dev --system --deploy"`,
+				`ARG INSTALL_CMD="pip install pipenv && pipenv install --system --deploy"`,
 				`ARG START_CMD="python manage.py runserver 0.0.0.0:${PORT}"`,
 			},
 		},
@@ -121,8 +121,36 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			path: "../testdata/python-fastapi",
 			expected: []any{
 				`ARG PYTHON_VERSION=3.6.0`,
-				`ARG INSTALL_CMD="pip install pipenv && pipenv install --dev --system --deploy"`,
+				`ARG INSTALL_CMD="pip install pipenv && pipenv install --system --deploy"`,
 				`ARG START_CMD="fastapi run main.py --port ${PORT}"`,
+			},
+		},
+		{
+			name: "uv project with main.py, whose name is not a module",
+			path: "../testdata/python-uv",
+			expected: []any{
+				`ARG START_CMD="python main.py"`,
+			},
+		},
+		{
+			name: "Django with gunicorn",
+			path: "../testdata/python-django-gunicorn",
+			expected: []any{
+				`ARG START_CMD="gunicorn mysite.wsgi --bind 0.0.0.0:${PORT}"`,
+			},
+		},
+		{
+			name: "FastAPI with uvicorn, not the fastapi command",
+			path: "../testdata/python-fastapi-uvicorn",
+			expected: []any{
+				`ARG START_CMD="uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"`,
+			},
+		},
+		{
+			name: "Flask with gunicorn",
+			path: "../testdata/python-flask",
+			expected: []any{
+				`ARG START_CMD="gunicorn app:app --bind 0.0.0.0:${PORT}"`,
 			},
 		},
 		{

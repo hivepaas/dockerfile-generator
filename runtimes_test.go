@@ -72,6 +72,9 @@ func TestMatchRuntime(t *testing.T) {
 		// composer.json comes before the lockfile of its assets' build
 		{"testdata/php-laravel", RuntimePHP},
 		{"testdata/php-composer", RuntimePHP},
+		// as does a Rails app's Gemfile
+		{"testdata/ruby-rails", RuntimeRuby},
+		{"testdata/ruby-puma", RuntimeRuby},
 		// index.php alone does not
 		{"testdata/php-npm", RuntimeNode},
 		{"testdata/nextjs", RuntimeNextJS},

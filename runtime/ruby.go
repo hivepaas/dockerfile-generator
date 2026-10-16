@@ -8,8 +8,11 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/semver/v3"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -62,28 +65,31 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 		installCMD = installCMD + " && npm ci"
 	} else if _, err := os.Stat(filepath.Join(path, "pnpm-lock.yaml")); err == nil {
 		packageManager = "pnpm"
-		installCMD = installCMD + " && corepack enable pnpm && pnpm i --frozen-lockfile"
+		installCMD = installCMD + " && pnpm i --frozen-lockfile"
 	} else if _, err := os.Stat(filepath.Join(path, "yarn.lock")); err == nil {
 		packageManager = "yarn"
 		installCMD = installCMD + " && yarn --frozen-lockfile"
-	} else if _, err := os.Stat(filepath.Join(path, "bun.lockb")); err == nil {
+	} else if hasBunLock(path) {
 		packageManager = "bun"
-		installCMD = installCMD + " && bun install"
+		installCMD = installCMD + " && npm i -g bun && bun install"
 	}
 
+	nodeVersion := "lts"
 	if packageManager != "" {
 		d.Log.Info("Detected Node.js package manager: " + packageManager)
+		if v, err := findNodeVersion(path, d.Log); err == nil {
+			nodeVersion = *v
+		}
 	}
 
-	isRails := isRailsProject(path)
 	buildCMD := ""
 	startCMD := ""
-	if isRails {
+	if IsRailsProject(path) {
 		d.Log.Info("Detected Rails project")
-		buildCMD = "bundle exec rake assets:precompile"
+		buildCMD = "bundle exec rails assets:precompile"
 		startCMD = "bundle exec rails server -b 0.0.0.0 -p ${PORT}"
 	} else {
-		configFiles := []string{"config.ru", "config/environment.rb", "Rakefile"}
+		configFiles := []string{"config.ru", "Rakefile"}
 
 		for _, fn := range configFiles {
 			_, err := os.Stat(filepath.Join(path, fn))
@@ -94,10 +100,13 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 			switch fn {
 			case "config.ru":
 				d.Log.Info("Detected Rack project")
-				startCMD = "bundle exec rackup config.ru -p ${PORT}"
-			case "config/environment.rb":
-				d.Log.Info("Detected Rails project")
-				startCMD = "bundle exec ruby script/server"
+				// Puma serves config.ru, as rackup does with Rack 3 only when
+				// the rackup gem is there
+				if gemfileHas(path, "puma") {
+					startCMD = "bundle exec puma -b tcp://0.0.0.0:${PORT} config.ru"
+				} else {
+					startCMD = "bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT}"
+				}
 			case "Rakefile":
 				d.Log.Info("Detected Rake project")
 				startCMD = "bundle exec rake"
@@ -121,10 +130,11 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 
 	var buf bytes.Buffer
 	templateData := map[string]string{
-		"Version":    *version,
-		"InstallCMD": safeCommand(installCMD),
-		"BuildCMD":   safeCommand(buildCMD),
-		"StartCMD":   safeCommand(startCMD),
+		"Version":     *version,
+		"NodeVersion": nodeVersion,
+		"InstallCMD":  safeCommand(installCMD),
+		"BuildCMD":    safeCommand(buildCMD),
+		"StartCMD":    safeCommand(startCMD),
 	}
 	if len(data) > 0 {
 		maps.Copy(templateData, data[0])
@@ -138,25 +148,50 @@ func (d *Ruby) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 
 var rubyTemplate = strings.TrimSpace(`
 ARG RUBY_VERSION={{.Version}}
+ARG NODE_VERSION={{.NodeVersion}}
 ARG BUILDER=docker.io/library/ruby
 ARG RUNNER=${BUILDER}:${RUBY_VERSION}-slim
-FROM ${RUNNER}
+FROM docker.io/library/node:${NODE_VERSION}-slim AS node
+
+FROM ${RUNNER} AS base
 WORKDIR /app
 ARG APT_EXTRA_PKGS=
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
+# The libraries most apps' gems load: PostgreSQL's and MySQL's clients, YAML's
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates libpq5 libmariadb3 libyaml-0-2 ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
+ENV RAILS_ENV=production \
+    RACK_ENV=production \
+    NODE_ENV=production \
+    RAILS_LOG_TO_STDOUT=1 \
+    RAILS_SERVE_STATIC_FILES=1 \
+    BUNDLE_WITHOUT=development:test
 
+FROM base AS build
+# The compilers and headers gems with native extensions are built with
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential git pkg-config libpq-dev libmariadb-dev libyaml-dev && apt-get clean && rm -f /var/lib/apt/lists/*_*
+# Node.js, for the assets an app builds with npm, pnpm or Yarn
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && if [ -f /usr/local/lib/node_modules/corepack/dist/corepack.js ]; then \
+        ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack; \
+    else npm install -g --no-fund --no-audit corepack; fi \
+    && corepack enable
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+COPY . .
 ARG INSTALL_CMD={{.InstallCMD}}
+RUN --mount=type=cache,target=/root/.bundle/cache \
+    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi
+# Rails precompiles its assets without its secret: a placeholder, in this step only
 ARG BUILD_CMD={{.BuildCMD}}
-ENV NODE_ENV=production
+RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then SECRET_KEY_BASE=assets-precompile-placeholder sh -c "$BUILD_CMD"; fi
 
-RUN chown -R nonroot:nonroot /app
-COPY --chown=nonroot:nonroot . .
-
-RUN --mount=type=cache,target=/root/.bundle \
-    {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD";  fi
-RUN {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
+FROM base AS runtime
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build --chown=nonroot:nonroot /app /app
 
 ENV PORT=8080
 EXPOSE ${PORT}
@@ -209,9 +244,9 @@ func findRubyVersion(path string, log *slog.Logger) (*string, error) {
 			case ".ruby-version":
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
-					line := scanner.Text()
+					line := strings.TrimSpace(scanner.Text())
 					if line != "" {
-						version = line
+						version = strings.TrimPrefix(line, "ruby-")
 						log.Info("Detected Ruby version from .ruby-version: " + version)
 						break
 					}
@@ -224,27 +259,13 @@ func findRubyVersion(path string, log *slog.Logger) (*string, error) {
 			case "Gemfile":
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
-					line := scanner.Text()
-					if strings.HasPrefix(line, "ruby") {
-						v := strings.Split(line, "'")
-						if len(v) < 2 {
-							v = strings.Split(line, "\"")
-						}
-						ruby := v[1]
-						if gteVersionRe.MatchString(ruby) {
-							version = gteVersionRe.FindStringSubmatch(ruby)[1]
-						} else if rangeVersionRe.MatchString(ruby) {
-							version = rangeVersionRe.FindStringSubmatch(ruby)[2]
-						} else if tildeVersionRe.MatchString(ruby) {
-							version = tildeVersionRe.FindStringSubmatch(ruby)[1]
-						} else if caretVersionRe.MatchString(ruby) {
-							version = caretVersionRe.FindStringSubmatch(ruby)[1]
-						} else if exactVersionRe.MatchString(ruby) {
-							version = ruby
-						}
-						log.Info("Detected Ruby version from Gemfile: " + version)
-						break
+					m := gemfileRubyRe.FindStringSubmatch(scanner.Text())
+					if m == nil || strings.HasPrefix(m[1], ".") {
+						continue
 					}
+					version = rubyVersionTag(m[1])
+					log.Info("Detected Ruby version from Gemfile: " + version)
+					break
 				}
 
 				if err := scanner.Err(); err != nil {
@@ -285,24 +306,71 @@ func findRubyVersion(path string, log *slog.Logger) (*string, error) {
 	return &version, nil
 }
 
-func isRailsProject(path string) bool {
-	_, err := os.Stat(filepath.Join(path, "Gemfile"))
-	if err == nil {
-		f, err := os.Open(filepath.Join(path, "Gemfile"))
-		if err != nil {
-			return false
+// gemfileRubyRe is the Gemfile's ruby line: ruby "3.3.6", ruby "~> 3.3".
+var gemfileRubyRe = regexp.MustCompile(`^\s*ruby\s+['"]([^'"]+)['"]`)
+
+// rubyVersionTag is the image tag for the Gemfile's Ruby: a version as it is,
+// the newest a constraint allows within its oldest major otherwise - "~> 3.2"
+// is Ruby 3's newest, not 3.2, out of support.
+func rubyVersionTag(constraint string) string {
+	constraint = strings.TrimSpace(constraint)
+	if rubyExactVersionRe.MatchString(constraint) {
+		return constraint
+	}
+	// RubyGems' "~> 3.2" is >= 3.2, < 4; "~> 3.2.1" is >= 3.2.1, < 3.3
+	converted := rubyPessimisticRe.ReplaceAllStringFunc(constraint, func(m string) string {
+		v := strings.TrimSpace(strings.TrimPrefix(m, "~>"))
+		if strings.Count(v, ".") == 1 {
+			return "^" + v
 		}
-
-		defer f.Close()
-
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.HasPrefix(line, "gem 'rails'") || strings.HasPrefix(line, "gem \"rails\"") {
-				return true
-			}
+		return "~" + v
+	})
+	c, err := semver.NewConstraint(converted)
+	if err != nil {
+		return constraint
+	}
+	for major := uint64(0); major <= 9; major++ {
+		if tag, ok := newestAllowed(c.Check, major); ok {
+			return tag
 		}
 	}
+	return constraint
+}
 
-	return false
+var (
+	rubyExactVersionRe = regexp.MustCompile(`^\d+(\.\d+)*$`)
+	rubyPessimisticRe  = regexp.MustCompile(`~>\s*[\d.]+`)
+)
+
+// IsRubyWebApp says whether a project is a Ruby web app: a Rails app, or a
+// Gemfile beside a config.ru, Rack's - a package.json beside it builds its
+// assets.
+func IsRubyWebApp(path string) bool {
+	if IsRailsProject(path) {
+		return true
+	}
+	_, gemfileErr := os.Stat(filepath.Join(path, "Gemfile"))
+	_, rackupErr := os.Stat(filepath.Join(path, "config.ru"))
+	return gemfileErr == nil && rackupErr == nil
+}
+
+var railsGemRe = regexp.MustCompile(`(?m)^\s*gem\s+['"]rails['"]`)
+
+// IsRailsProject says whether a project is a Rails app: its Gemfile has the
+// rails gem, or it has Rails' config/environment.rb.
+func IsRailsProject(path string) bool {
+	if content, err := os.ReadFile(filepath.Join(path, "Gemfile")); err == nil && railsGemRe.Match(content) {
+		return true
+	}
+	_, err := os.Stat(filepath.Join(path, "config", "environment.rb"))
+	return err == nil
+}
+
+// gemfileHas says whether the Gemfile names the gem.
+func gemfileHas(path, gem string) bool {
+	content, err := os.ReadFile(filepath.Join(path, "Gemfile"))
+	if err != nil {
+		return false
+	}
+	return regexp.MustCompile(`(?m)^\s*gem\s+['"]` + regexp.QuoteMeta(gem) + `['"]`).Match(content)
 }

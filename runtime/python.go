@@ -8,10 +8,11 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
-	"github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type Python struct {
@@ -78,7 +79,7 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
 		packageManager = PythonPackageManagerPoetry
 	} else if _, err := os.Stat(filepath.Join(path, "Pipfile.lock")); err == nil {
 		d.Log.Info("Detected a pipenv project")
-		installCMD = "pip install pipenv && pipenv install --dev --system --deploy"
+		installCMD = "pip install pipenv && pipenv install --system --deploy"
 		packageManager = PythonPackageManagerPipenv
 	} else if _, err := os.Stat(filepath.Join(path, "pdm.lock")); err == nil {
 		d.Log.Info("Detected a pdm project")
@@ -89,68 +90,7 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
 		installCMD = "pip install --upgrade build setuptools && pip install ."
 	}
 
-	managePy := isDjangoProject(path)
-	isFastAPI := isFastAPIProject(path)
-	startCMD := ""
-	projectName := filepath.Base(path)
-
-	if managePy != nil {
-		d.Log.Info("Detected Django project")
-		startCMD = fmt.Sprintf(`python ` + *managePy + ` runserver 0.0.0.0:${PORT}`)
-	} else if !isFastAPI {
-		if _, err := os.Stat(filepath.Join(path, "pyproject.toml")); err == nil {
-			f, err := os.Open(filepath.Join(path, "pyproject.toml"))
-			if err == nil {
-				var pyprojectTOML map[string]interface{}
-				err := toml.NewDecoder(f).Decode(&pyprojectTOML)
-				if err == nil {
-					if project, ok := pyprojectTOML["project"].(map[string]interface{}); ok {
-						if name, ok := project["name"].(string); ok {
-							projectName = name
-						}
-					} else if project, ok := pyprojectTOML["tool.poetry"].(map[string]interface{}); ok {
-						if name, ok := project["name"].(string); ok {
-							projectName = name
-						}
-					}
-				}
-
-				if projectName != "" {
-					startCMD = fmt.Sprintf(`python -m %s`, projectName)
-					d.Log.Info("Detected start command via pyproject.toml")
-				}
-			}
-		}
-	}
-
-	if startCMD == "" {
-		mainFiles := []string{
-			"main.py",
-			"app.py",
-			"application.py",
-			"app/main.py",
-			"app/__init__.py",
-			filepath.Join(path, filepath.Base(path), "main.py"),
-			filepath.Join(path, filepath.Base(path), "app.py"),
-			filepath.Join(path, filepath.Base(path), "application.py"),
-			filepath.Join(path, filepath.Base(path), "__init__.py"),
-		}
-
-		for _, fn := range mainFiles {
-			_, err := os.Stat(filepath.Join(path, fn))
-			if err != nil {
-				continue
-			}
-
-			if isFastAPI {
-				startCMD = fmt.Sprintf(`fastapi run %s --port ${PORT}`, fn)
-			} else {
-				startCMD = fmt.Sprintf(`python %s`, fn)
-				d.Log.Info("Detected start command via main file: " + startCMD)
-			}
-			break
-		}
-	}
+	startCMD := pythonStartCommand(path, d.Log)
 
 	packagerInstructions := ""
 	switch packageManager {
@@ -158,6 +98,8 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
 		packagerInstructions = poetryInstructions
 	case PythonPackageManagerUv:
 		packagerInstructions = uvInstructions
+	case PythonPackageManagerPdm:
+		packagerInstructions = pdmInstructions
 	}
 
 	d.Log.Info(
@@ -229,6 +171,12 @@ ENV POETRY_NO_INTERACTION=1
 ENV POETRY_VIRTUALENVS_CREATE=false
 ENV POETRY_CACHE_DIR='/var/cache/pypoetry'
 ENV POETRY_HOME='/usr/local'`
+
+var pdmInstructions = `
+ENV PDM_CHECK_UPDATE=false
+# pdm installs into the project's virtual environment
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"`
 
 var uvInstructions = `
 # Set the UV_CACHE_DIR environment variable to a directory where uv will store its cache
@@ -416,3 +364,143 @@ const (
 	PythonPackageManagerPipenv PythonPackageManager = "pipenv"
 	PythonPackageManagerPdm    PythonPackageManager = "pdm"
 )
+
+// pythonStartCommand is the command that starts a Python app: Django's,
+// FastAPI's or Flask's server, the package pyproject.toml names when it runs
+// as a module, or the main file.
+func pythonStartCommand(path string, log *slog.Logger) string {
+	if managePy := isDjangoProject(path); managePy != nil {
+		log.Info("Detected Django project")
+		if pythonDependsOn(path, "gunicorn") {
+			if wsgi := djangoWSGIModule(path, *managePy); wsgi != "" {
+				chdir := ""
+				if dir := filepath.Dir(*managePy); dir != "." {
+					chdir = "--chdir " + filepath.ToSlash(dir) + " "
+				}
+				return "gunicorn " + chdir + wsgi + " --bind 0.0.0.0:${PORT}"
+			}
+		}
+		return "python " + *managePy + " runserver 0.0.0.0:${PORT}"
+	}
+
+	isFastAPI := isFastAPIProject(path)
+	if !isFastAPI {
+		if cmd := pyprojectModuleCommand(path); cmd != "" {
+			log.Info("Detected start command via pyproject.toml: " + cmd)
+			return cmd
+		}
+	}
+
+	base := filepath.Base(path)
+	mainFiles := []string{
+		"main.py",
+		"app.py",
+		"application.py",
+		"app/main.py",
+		"app/__init__.py",
+		filepath.Join(base, "main.py"),
+		filepath.Join(base, "app.py"),
+		filepath.Join(base, "application.py"),
+		filepath.Join(base, "__init__.py"),
+	}
+	for _, fn := range mainFiles {
+		if _, err := os.Stat(filepath.Join(path, fn)); err != nil {
+			continue
+		}
+		fn = filepath.ToSlash(fn)
+		module := strings.TrimSuffix(strings.TrimSuffix(fn, ".py"), "/__init__")
+		module = strings.ReplaceAll(module, "/", ".")
+		var cmd string
+		switch {
+		case isFastAPI && !pythonDependsOnFastAPICLI(path) && pythonDependsOn(path, "uvicorn"):
+			cmd = "uvicorn " + module + ":app --host 0.0.0.0 --port ${PORT}"
+		case isFastAPI:
+			cmd = "fastapi run " + fn + " --port ${PORT}"
+		case pythonDependsOn(path, "flask") && pythonDependsOn(path, "gunicorn"):
+			cmd = "gunicorn " + module + ":app --bind 0.0.0.0:${PORT}"
+		default:
+			cmd = "python " + fn
+		}
+		log.Info("Detected start command via main file: " + cmd)
+		return cmd
+	}
+	return ""
+}
+
+// pyprojectModuleCommand runs the package pyproject.toml names as a module,
+// when it is one: name/__main__.py, or src/name/__main__.py.
+func pyprojectModuleCommand(path string) string {
+	content, err := os.ReadFile(filepath.Join(path, "pyproject.toml"))
+	if err != nil {
+		return ""
+	}
+	var pyproject struct {
+		Project struct {
+			Name string `toml:"name"`
+		} `toml:"project"`
+		Tool struct {
+			Poetry struct {
+				Name string `toml:"name"`
+			} `toml:"poetry"`
+		} `toml:"tool"`
+	}
+	if err := toml.Unmarshal(content, &pyproject); err != nil {
+		return ""
+	}
+	name := pyproject.Project.Name
+	if name == "" {
+		name = pyproject.Tool.Poetry.Name
+	}
+	module := strings.ToLower(strings.NewReplacer("-", "_", ".", "_").Replace(name))
+	if module == "" {
+		return ""
+	}
+	if _, err := os.Stat(filepath.Join(path, module, "__main__.py")); err == nil {
+		return "python -m " + module
+	}
+	if _, err := os.Stat(filepath.Join(path, "src", module, "__main__.py")); err == nil {
+		return "PYTHONPATH=src python -m " + module
+	}
+	return ""
+}
+
+var djangoSettingsRe = regexp.MustCompile(`DJANGO_SETTINGS_MODULE["']\s*,\s*["']([\w.]+)\.settings["']`)
+
+// djangoWSGIModule is the WSGI module beside the settings manage.py names:
+// mysite.settings has mysite.wsgi.
+func djangoWSGIModule(path, managePy string) string {
+	content, err := os.ReadFile(filepath.Join(path, managePy))
+	if err != nil {
+		return ""
+	}
+	m := djangoSettingsRe.FindSubmatch(content)
+	if m == nil {
+		return ""
+	}
+	return string(m[1]) + ".wsgi"
+}
+
+// pythonDependsOn says whether requirements.txt, pyproject.toml or Pipfile
+// names the package: as a name of its own, not a part of another.
+func pythonDependsOn(path, name string) bool {
+	re := regexp.MustCompile(`(?i)(^|[^A-Za-z0-9_.-])` + regexp.QuoteMeta(name) + `([^A-Za-z0-9_.-]|$)`)
+	for _, file := range []string{"requirements.txt", "pyproject.toml", "Pipfile"} {
+		if content, err := os.ReadFile(filepath.Join(path, file)); err == nil && re.Match(content) {
+			return true
+		}
+	}
+	return false
+}
+
+var fastAPICLIRe = regexp.MustCompile(`(?i)fastapi\[[^\]]*standard|fastapi-cli`)
+
+// pythonDependsOnFastAPICLI says whether the project has the fastapi command:
+// fastapi[standard], or fastapi-cli.
+func pythonDependsOnFastAPICLI(path string) bool {
+	for _, file := range []string{"requirements.txt", "pyproject.toml", "Pipfile"} {
+		if content, err := os.ReadFile(filepath.Join(path, file)); err == nil && fastAPICLIRe.Match(content) {
+			return true
+		}
+	}
+	return false
+}

@@ -94,6 +94,12 @@ func (a *Dockerfile) MatchRuntime(path string) (runtime.Runtime, error) {
 		a.log.Info("Detected composer.json: a PHP project")
 		return &runtime.PHP{Log: a.log}, nil
 	}
+	// A Ruby web app - Rails', or Rack's config.ru - is Ruby's, for the same
+	// reason
+	if runtime.IsRubyWebApp(path) {
+		a.log.Info("Detected a Ruby web app: a Ruby project")
+		return &runtime.Ruby{Log: a.log}, nil
+	}
 
 	for _, r := range a.ListRuntimes() {
 		if r.Match(path) {

@@ -61,7 +61,17 @@ func TestPHPGenerateDockerfile(t *testing.T) {
 		{
 			name:     "PHP project with composer",
 			path:     "../testdata/php-composer",
-			expected: []any{`ARG PHP_VERSION=5.3`, `ARG INSTALL_CMD="composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=8`, `ARG INSTALL_CMD="composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction '--ignore-platform-req=ext-*'"`, `ARG PHP_EXTENSIONS="opcache pdo_mysql pdo_pgsql"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+		},
+		{
+			name:     "PHP project with a lock that bounds PHP",
+			path:     "../testdata/php-lock",
+			expected: []any{`ARG PHP_VERSION=8.3`, `--ignore-platform-reqs"`, `ARG PHP_EXTENSIONS="gd intl opcache pdo_mysql pdo_pgsql"`},
+		},
+		{
+			name:     "PHP project with config.platform.php",
+			path:     "../testdata/php-platform",
+			expected: []any{`ARG PHP_VERSION=8.2`},
 		},
 		{
 			name:     "PHP project with NPM",

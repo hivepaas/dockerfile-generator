@@ -1,0 +1,8 @@
+{
+    "require": {
+        "php": "^8.1",
+        "acme/legacy": "^1.0",
+        "ext-intl": "*",
+        "ext-Zend-OPcache": "*"
+    }
+}

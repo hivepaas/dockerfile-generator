@@ -84,8 +84,8 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			expected: []any{
 				`ARG RUBY_VERSION=3.0.1`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
-				regexp.MustCompile(`^ARG BUILD_CMD=$`),
-				`ARG START_CMD="bundle exec ruby script/server"`,
+				`ARG BUILD_CMD="bundle exec rails assets:precompile"`,
+				`ARG START_CMD="bundle exec rails server -b 0.0.0.0 -p ${PORT}"`,
 			},
 		},
 		{
@@ -95,7 +95,7 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 				`ARG RUBY_VERSION=2.3.0`,
 				regexp.MustCompile(`^ARG INSTALL_CMD="bundle install"$`),
 				regexp.MustCompile(`^ARG BUILD_CMD=$`),
-				`ARG START_CMD="bundle exec rackup config.ru -p ${PORT}"`,
+				`ARG START_CMD="bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT}"`,
 			},
 		},
 		{
@@ -117,9 +117,17 @@ func TestRubyGenerateDockerfile(t *testing.T) {
 			path: "../testdata/ruby-rails",
 			expected: []any{
 				`ARG RUBY_VERSION=3.3`,
-				`ARG INSTALL_CMD="bundle install && corepack enable pnpm && pnpm i --frozen-lockfile"`,
-				`ARG BUILD_CMD="bundle exec rake assets:precompile"`,
+				`ARG INSTALL_CMD="bundle install && pnpm i --frozen-lockfile"`,
+				`ARG BUILD_CMD="bundle exec rails assets:precompile"`,
 				`ARG START_CMD="bundle exec rails server -b 0.0.0.0 -p ${PORT}`,
+			},
+		},
+		{
+			name: "Rack project with puma",
+			path: "../testdata/ruby-puma",
+			expected: []any{
+				`ARG RUBY_VERSION=3`,
+				`ARG START_CMD="bundle exec puma -b tcp://0.0.0.0:${PORT} config.ru"`,
 			},
 		},
 		{

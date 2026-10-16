@@ -198,7 +198,9 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 					if strings.HasPrefix(strings.TrimSpace(line), "go ") {
 						parts := strings.Fields(line)
 						if len(parts) >= 2 {
-							version = parts[1]
+							// The oldest Go the module builds with: its minor's
+							// image has that minor's newest release
+							version = goMinor(parts[1])
 							log.Info("Detected Go version in go.mod: " + version)
 						}
 						break
@@ -243,4 +245,12 @@ func findGoVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	return &version, nil
+}
+
+// goMinor is a go.mod version's minor: "1.24.0" is 1.24.
+func goMinor(version string) string {
+	if parts := strings.SplitN(version, ".", 3); len(parts) == 3 {
+		return parts[0] + "." + parts[1]
+	}
+	return version
 }

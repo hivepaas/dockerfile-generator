@@ -54,11 +54,14 @@ func (d *Java) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 	}
 
 	tpl := javaMavenTemplate
-	startCMD := "java $JAVA_OPTS -jar target/*jar"
+	startCMD := "java $JAVA_OPTS -jar " + javaMavenJar
 	buildCMD := ""
 	gradleVersion := ""
 
-	if _, err := os.Stat(filepath.Join(path, "gradlew")); err == nil {
+	_, wrapperErr := os.Stat(filepath.Join(path, "gradlew"))
+	_, groovyErr := os.Stat(filepath.Join(path, "build.gradle"))
+	_, kotlinErr := os.Stat(filepath.Join(path, "build.gradle.kts"))
+	if wrapperErr == nil || groovyErr == nil || kotlinErr == nil {
 		gv, err := findGradleVersion(path, d.Log)
 		if err != nil {
 			return nil, err
@@ -66,8 +69,13 @@ func (d *Java) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 
 		gradleVersion = *gv
 		tpl = javaGradleTemplate
-		buildCMD = "./gradlew clean build -x check -x test"
-		startCMD = "java $JAVA_OPTS -jar $(ls -1 build/libs/*jar | grep -v plain)"
+		// The project's own Gradle, or the image's when it has no wrapper
+		gradle := "gradle"
+		if wrapperErr == nil {
+			gradle = "./gradlew"
+		}
+		buildCMD = gradle + " clean build -x check -x test"
+		startCMD = "java $JAVA_OPTS -jar " + javaGradleJar
 	}
 
 	mavenVersion := ""
@@ -86,15 +94,15 @@ func (d *Java) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 
 	if isSpringBootApp(path) {
 		d.Log.Info("Detected Spring Boot application")
-		startCMD = "java -Dserver.port=${PORT} $JAVA_OPTS -jar target/*jar"
+		startCMD = "java -Dserver.port=${PORT} $JAVA_OPTS -jar " + javaMavenJar
 		if gradleVersion != "" {
-			startCMD = "java $JAVA_OPTS -jar -Dserver.port=${PORT} $(ls -1 build/libs/*jar | grep -v plain)"
+			startCMD = "java $JAVA_OPTS -jar -Dserver.port=${PORT} " + javaGradleJar
 		}
 	}
 
 	if isWildflySwarmApp(path) {
 		d.Log.Info("Detected Wildfly Swarm application")
-		startCMD = "java -Dswarm.http.port=${PORT} $JAVA_OPTS -jar target/*jar"
+		startCMD = "java -Dswarm.http.port=${PORT} $JAVA_OPTS -jar " + javaMavenJar
 	}
 
 	d.Log.Info(
@@ -150,13 +158,18 @@ FROM maven:${MAVEN_VERSION}-eclipse-temurin-${JAVA_VERSION} AS build
 WORKDIR /app
 
 COPY pom.xml* pom.atom* pom.clj* pom.groovy* pom.rb* pom.scala* pom.yml* pom.yaml* .
-RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline
+# The dependencies, cached apart from the code; a project of several modules
+# fetches them as it builds
+RUN --mount=type=cache,target=/root/.m2 mvn -B dependency:go-offline || true
 
-COPY src src
-RUN --mount=type=cache,target=/root/.m2 mvn install
-
+COPY . .
+# The build skips the tests, as a deployment is not where they run
 ARG BUILD_CMD={{.BuildCMD}}
 RUN --mount=type=cache,target=/root/.m2 if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
+# The jar the build made, among those beside it: not its sources, its
+# documentation or its tests
+RUN jar="$(ls -1 target/*.jar 2>/dev/null | grep -v -E -- '-(sources|javadoc|tests)\.jar$' | head -n 1)" \
+    && if [ -n "${jar}" ]; then cp "${jar}" /app/app.jar; fi
 
 FROM ${RUNNER} AS runtime
 WORKDIR /app
@@ -169,6 +182,7 @@ RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
 
 COPY --from=build --chown=nonroot:nonroot /app/target/*.jar /app/target/
+COPY --from=build --chown=nonroot:nonroot /app/app.ja[r] /app/
 
 ENV PORT=8080
 EXPOSE ${PORT}
@@ -192,12 +206,14 @@ ARG RUNNER=docker.io/library/eclipse-temurin:${JAVA_VERSION}-jdk
 FROM ${BUILDER}:${GRADLE_VERSION}-jdk${JAVA_VERSION} AS build
 WORKDIR /app
 
-COPY build.gradle* gradlew* settings.gradle* ./
-COPY gradle/ ./gradle/
-COPY src src
+COPY . .
 
 ARG BUILD_CMD={{.BuildCMD}}
 RUN --mount=type=cache,target=/root/.gradle if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; fi
+# The jar the build made, among those beside it: not its sources, its
+# documentation, its tests or Gradle's plain jar
+RUN jar="$(ls -1 build/libs/*.jar 2>/dev/null | grep -v -E -- '-(sources|javadoc|tests|plain)\.jar$' | head -n 1)" \
+    && if [ -n "${jar}" ]; then cp "${jar}" /app/app.jar; fi
 
 FROM ${RUNNER} AS runtime
 WORKDIR /app
@@ -210,6 +226,7 @@ RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
 
 COPY --from=build --chown=nonroot:nonroot /app/build/libs/*.jar /app/build/libs/
+COPY --from=build --chown=nonroot:nonroot /app/app.ja[r] /app/
 
 ENV PORT=8080
 EXPOSE ${PORT}
@@ -412,6 +429,14 @@ func isWildflySwarmApp(path string) bool {
 
 	return false
 }
+
+// javaMavenJar and javaGradleJar are the jar the build picks among those it
+// makes, which it copies to app.jar: the start command is not a shell's, and
+// would not run a $(...) to find it.
+const (
+	javaMavenJar  = "app.jar"
+	javaGradleJar = "app.jar"
+)
 
 var pomFiles = []string{
 	"pom.xml",

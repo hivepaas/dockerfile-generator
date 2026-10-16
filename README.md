@@ -120,7 +120,11 @@ of the runtime to install. It will then make a best effort to detect any install
 For example, a `serve`, `start`, `start:prod` command in a `package.json` file will be used as the start command.
 
 Runtimes are matched against in the order they appear when you run `dockerfile-gen --runtime list`,
-except that a project with `composer.json` is PHP's first: its `package.json` and lockfile build its assets.
+except that a project with `composer.json` is PHP's first, and a Ruby web app (Rails, or a `Gemfile` beside a
+`config.ru`) Ruby's: its `package.json` and lockfile build its assets.
+
+A version constraint - `engines.node`, `composer.json`'s `php`, the Gemfile's `ruby` - gives the newest version it
+allows, not the oldest, which is often out of support: `^20.10` is Node.js 20's newest, `>=18` the LTS.
 
 Read on to see runtime-specific examples and how to configure the generated Dockerfile.
 
@@ -393,7 +397,7 @@ Detected in order of precedence:
 #### Version Detection
   - `.tool-versions` - `golang {VERSION}`
   - `.mise.toml` - `go = "{VERSION}"`
-  - `go.mod` - `go {VERSION}`
+  - `go.mod` - `go {VERSION}`: its minor, `1.24` for `1.24.0`, whose image has its newest release
 
 #### Runtime Image
 `alpine:latest`
@@ -430,6 +434,7 @@ Detected in order of precedence:
 
 #### Detected Files
   - `pom.{xml,atom,clj,groovy,rb,scala,yml,yaml}`
+  - `build.gradle`, `build.gradle.kts`, `gradlew`
 
 #### Version Detection
 JDK version:
@@ -451,14 +456,18 @@ Maven version:
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
-- If Maven: `mvn install`
+- If Maven: `mvn -B dependency:go-offline`, with `pom.xml` alone, so that the dependencies are cached apart from the code
 
 #### Build Command
+The tests do not run.
 - If Maven: `mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install`
+- If Gradle: `./gradlew clean build -x check -x test`, or `gradle` without a wrapper
+
+The jar it made - not its `-sources`, `-javadoc`, `-tests` or `-plain` one - is copied to `app.jar`.
 
 #### Start Command
-- Default: `java $JAVA_OPTS -jar target/*jar`
-- If Spring Boot: `java -Dserver.port=${PORT} $JAVA_OPTS -jar target/*jar`
+- Default: `java $JAVA_OPTS -jar app.jar`
+- If Spring Boot: `java -Dserver.port=${PORT} $JAVA_OPTS -jar app.jar`
 
 ---
 
@@ -573,9 +582,10 @@ fi
   - `pnpm-lock.yaml`
 
 #### Version Detection
+  - `.nvmrc`, `.node-version` - `v{VERSION}`, `lts/*`, `lts/{CODENAME}` or `node`
   - `.tool-versions` - `nodejs {VERSION}`
-  - `.nvmrc` - `v{VERSION}`
-  - `.node-version` - `v{VERSION}`
+  - `.mise.toml` - `node = "{VERSION}"`
+  - `package.json` - `engines.node`: the newest version it allows, `lts` when it has no upper bound
 
 #### Runtime Image
 `node:${NODE_VERSION}-slim`
@@ -592,7 +602,10 @@ fi
 #### Install Command
 - If Yarn: `yarn --frozen-lockfile`
 - If npm: `npm ci`
-- If pnpm: `corepack enable pnpm && pnpm i --frozen-lockfile`
+- If pnpm: `pnpm i --frozen-lockfile`
+
+pnpm and Yarn run through Corepack, installed when Node.js has none (25 and later), and fetched as the image is
+built, not as the app starts.
 
 #### Build Command
 In order of precedence:
@@ -616,7 +629,8 @@ In order of precedence:
 
 #### Version Detection
   - `.tool-versions` - `php {VERSION}`
-  - `composer.json` - `"php": "{VERSION}"`
+  - `composer.json` - `config.platform.php`, the PHP its dependencies are resolved for
+  - `composer.json` - `require.php`, with every `require.php` of `composer.lock`'s packages: the newest PHP they all allow
 
 #### Runtime Image
 `php:${PHP_VERSION}-apache`
@@ -624,6 +638,7 @@ In order of precedence:
 #### Build Args
   - `PHP_VERSION` - The version of PHP to install (default: `8.3`)
   - `DOCUMENT_ROOT` - The directory Apache serves (default: `/var/www/html/public` with `public/index.php`, else `/var/www/html`)
+  - `PHP_EXTENSIONS` - The extensions to install (default: `opcache pdo_mysql pdo_pgsql`, and the `ext-*` that `composer.json` and `composer.lock`'s packages require)
   - `INSTALL_CMD` - The command to install dependencies (default: detected via source code)
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
@@ -632,7 +647,9 @@ In order of precedence:
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
-- If Composer: `composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`, from `composer.lock`
+- If Composer: `composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`, from `composer.lock`.
+  It runs in Composer's image, not the app's: `--ignore-platform-reqs` with `composer.lock`, whose PHP the app's
+  image has, else `--ignore-platform-req=ext-*`. Composer's platform check runs as the app starts.
 - If a lockfile of `package.json` exists: composer install command + `npm ci`, `pnpm i --frozen-lockfile`, `yarn --frozen-lockfile`, or `npm i -g bun && bun install` (`bun.lock`, `bun.lockb`)
 
 #### Build Command
@@ -682,17 +699,19 @@ In order of precedence:
 
 #### Install Command
 - If Poetry: `pip install poetry && poetry install --only main --no-ansi --no-root`
-- If Pipenv: `pipenv install --dev --system --deploy`
+- If Pipenv: `pipenv install --system --deploy`
 - If uv: `pip install uv && uv sync --python-preference=only-system --no-cache --no-dev`
-- If PDM: `pip install pdm && pdm install --prod`
+- If PDM: `pip install pdm && pdm install --prod`, into `.venv`, which is on `PATH`
 - If `pyproject.toml` exists: `pip install --upgrade build setuptools && pip install .`
 - If `requirements.txt` exists: `pip install -r requirements.txt`
 
 #### Start Command
-- If Django is detected: `python manage.py runserver 0.0.0.0:${PORT}`
-- If FastAPI is detected: `fastapi run [main.py, app.py, application.py, app/main.py, app/application.py, app/__init__.py] --port ${PORT}`
-- If `pyproject.toml` exists: `python -m ${projectName}`
-- Otherwise: `python [main.py, app.py, application.py, app/main.py, app/application.py, app/__init__.py]`
+- If Django is detected: `gunicorn {project}.wsgi --bind 0.0.0.0:${PORT}` with gunicorn, else `python manage.py runserver 0.0.0.0:${PORT}`
+- If `pyproject.toml` names a package with a `__main__.py` (beside it or in `src/`): `python -m {package}`
+- With a main file - `main.py`, `app.py`, `application.py`, `app/main.py`, `app/__init__.py`:
+  - If FastAPI: `fastapi run {file} --port ${PORT}` with `fastapi[standard]` or `fastapi-cli`, else `uvicorn {module}:app --host 0.0.0.0 --port ${PORT}` with uvicorn
+  - If Flask with gunicorn: `gunicorn {module}:app --bind 0.0.0.0:${PORT}`
+  - Otherwise: `python {file}`
 
 ---
 
@@ -758,15 +777,16 @@ Otherwise: `pak::pak("plumber")` or `pak::pak("shiny")`
 
 #### Version Detection
   - `.tool-versions` - `ruby {VERSION}`
-  - `.ruby-version` - `{VERSION}`
+  - `.ruby-version` - `{VERSION}` or `ruby-{VERSION}`
   - `.mise.toml` - `ruby = "{VERSION}"`
-  - `Gemfile` - `ruby '{VERSION}'`
+  - `Gemfile` - `ruby '{VERSION}'`, or a constraint: `~> 3.2` is Ruby 3's newest
 
 #### Runtime Image
 `ruby:${RUBY_VERSION}-slim`
 
 #### Build Args
   - `RUBY_VERSION` - The version of Ruby to install (default: `3.3`)
+  - `NODE_VERSION` - The version of Node.js the build has, for the assets (default: detected as for Node.js, `lts`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected from source code)
   - `BUILD_CMD` - The command to build the project (default: detected from source code)
   - `START_CMD` - The command to start the project (default: detected from source code)
@@ -774,17 +794,21 @@ Otherwise: `pak::pak("plumber")` or `pak::pak("shiny")`
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
+The image is built in two stages: gems with native extensions are compiled with `build-essential` and the headers
+of PostgreSQL's, MySQL's and YAML's libraries, beside Node.js; the app runs on the slim image with those libraries
+alone. `RAILS_ENV`, `RACK_ENV` and `NODE_ENV` are `production`, and the development and test gems are not installed.
+
 #### Install Command
 - `bundle install`
-- If `package.json` exists: `bundle install && [package manager install command]`
+- If a lockfile of `package.json` exists: `bundle install && [package manager install command]`
 
 #### Build Command
-- If Rails: `bundle exec rake assets:precompile`
+- If Rails (the `rails` gem, or `config/environment.rb`): `bundle exec rails assets:precompile`, with a placeholder
+  `SECRET_KEY_BASE` in that step only
 
 #### Start Command
 - If Rails: `bundle exec rails server -b 0.0.0.0 -p ${PORT}`
-- If `config.ru` exists: `bundle exec rackup config.ru -p ${PORT}`
-- If `config/environment.rb` exists: `bundle exec rails server -b`
+- If `config.ru` exists: `bundle exec puma -b tcp://0.0.0.0:${PORT} config.ru` with Puma, else `bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT}`
 - If `Rakefile` exists: `bundle exec rake`
 
 ---
