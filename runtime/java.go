@@ -106,7 +106,7 @@ func (d *Java) GenerateDockerfile(path string, data ...map[string]string) ([]byt
   Start command   : %s
 
   Docker build arguments can supersede these defaults if provided.
-  See https://flexstack.com/docs/languages-and-frameworks/autogenerate-dockerfile`, *version, mavenVersion, gradleVersion, buildCMD, startCMD),
+  See https://github.com/hivepaas/dockerfile-generator#runtime-documentation`, *version, mavenVersion, gradleVersion, buildCMD, startCMD),
 	)
 
 	var buf bytes.Buffer

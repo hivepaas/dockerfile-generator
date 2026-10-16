@@ -68,7 +68,7 @@ func (d *Elixir) GenerateDockerfile(path string, data ...map[string]string) ([]b
   Binary name    : %s
 
   Docker build arguments can supersede these defaults if provided.
-  See https://flexstack.com/docs/languages-and-frameworks/autogenerate-dockerfile`, *elixirVersion, *otpVersion, binName),
+  See https://github.com/hivepaas/dockerfile-generator#runtime-documentation`, *elixirVersion, *otpVersion, binName),
 	)
 
 	var buf bytes.Buffer

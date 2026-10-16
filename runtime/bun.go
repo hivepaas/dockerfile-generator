@@ -115,7 +115,7 @@ func (d *Bun) GenerateDockerfile(path string, data ...map[string]string) ([]byte
   Start command   : %s
 
   Docker build arguments can supersede these defaults if provided.
-  See https://flexstack.com/docs/languages-and-frameworks/autogenerate-dockerfile`, *version, buildCMD, startCMD),
+  See https://github.com/hivepaas/dockerfile-generator#runtime-documentation`, *version, buildCMD, startCMD),
 	)
 
 	if startCMD != "" {

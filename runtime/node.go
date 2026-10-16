@@ -141,7 +141,7 @@ func (d *Node) GenerateDockerfile(path string, data ...map[string]string) ([]byt
   Start command   : %s
 
   Docker build arguments can supersede these defaults if provided.
-  See https://flexstack.com/docs/languages-and-frameworks/autogenerate-dockerfile`, *version, packageManager, installCMD, buildCMD, startCMD),
+  See https://github.com/hivepaas/dockerfile-generator#runtime-documentation`, *version, packageManager, installCMD, buildCMD, startCMD),
 	)
 
 	var buf bytes.Buffer

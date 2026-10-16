@@ -167,7 +167,7 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
   Start command        : %s
 
   Docker build arguments can supersede these defaults if provided.
-  See https://flexstack.com/docs/languages-and-frameworks/autogenerate-dockerfile`, *version, installCMD, startCMD),
+  See https://github.com/hivepaas/dockerfile-generator#runtime-documentation`, *version, installCMD, startCMD),
 	)
 
 	var buf bytes.Buffer
