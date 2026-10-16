@@ -119,7 +119,8 @@ From there, it will read any `.tool-versions` or other version manager files to 
 of the runtime to install. It will then make a best effort to detect any install, build, and start commands.
 For example, a `serve`, `start`, `start:prod` command in a `package.json` file will be used as the start command.
 
-Runtimes are matched against in the order they appear when you run `dockerfile-gen --runtime list`.
+Runtimes are matched against in the order they appear when you run `dockerfile-gen --runtime list`,
+except that a project with `composer.json` is PHP's first: its `package.json` and lockfile build its assets.
 
 Read on to see runtime-specific examples and how to configure the generated Dockerfile.
 
@@ -610,7 +611,7 @@ In order of precedence:
 [PHP](https://www.php.net/) is a popular general-purpose scripting language that is especially suited to web development.
 
 #### Detected Files
-  - `composer.json`
+  - `composer.json`, before any other runtime
   - `index.php`
 
 #### Version Detection
@@ -632,13 +633,13 @@ In order of precedence:
 
 #### Install Command
 - If Composer: `composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`, from `composer.lock`
-- If `package.json` exists: composer install command + see Node.js install command
+- If a lockfile of `package.json` exists: composer install command + `npm ci`, `pnpm i --frozen-lockfile`, `yarn --frozen-lockfile`, or `npm i -g bun && bun install` (`bun.lock`, `bun.lockb`)
 
 #### Build Command
 - If `package.json` exists: see Node.js build command
 
 #### Start Command
-`apache2-foreground`, with `mod_rewrite`. Dot files (`.env`), `composer.json`, `composer.lock`, `auth.json` and `vendor/` are not served.
+`apache2-foreground`, with `mod_rewrite` and PHP's production settings (`php.ini-production`: errors are logged, not shown). Dot files (`.env`), `composer.json`, `composer.lock`, `auth.json` and `vendor/` are not served.
 
 ---
 

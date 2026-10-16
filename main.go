@@ -88,6 +88,13 @@ func (a *Dockerfile) ListRuntimes() []runtime.Runtime {
 
 // Matches the runtime of the project at the given path.
 func (a *Dockerfile) MatchRuntime(path string) (runtime.Runtime, error) {
+	// composer.json makes a project PHP's: its package.json, when it has one,
+	// builds its assets, and a lockfile beside it would make it Node.js's
+	if _, err := os.Stat(filepath.Join(path, "composer.json")); err == nil {
+		a.log.Info("Detected composer.json: a PHP project")
+		return &runtime.PHP{Log: a.log}, nil
+	}
+
 	for _, r := range a.ListRuntimes() {
 		if r.Match(path) {
 			return r, nil

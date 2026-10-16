@@ -1,6 +1,8 @@
 package dockerfile
 
 import (
+	"io"
+	"log/slog"
 	"testing"
 )
 
@@ -61,3 +63,31 @@ func TestGetTemplate(t *testing.T) {
 	}
 }
 
+func TestMatchRuntime(t *testing.T) {
+	df := New(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	tests := []struct {
+		path     string
+		expected Runtime
+	}{
+		// composer.json comes before the lockfile of its assets' build
+		{"testdata/php-laravel", RuntimePHP},
+		{"testdata/php-composer", RuntimePHP},
+		// index.php alone does not
+		{"testdata/php-npm", RuntimeNode},
+		{"testdata/nextjs", RuntimeNextJS},
+		{"testdata/node", RuntimeNode},
+		{"testdata/python", RuntimePython},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			r, err := df.MatchRuntime(tt.path)
+			if err != nil {
+				t.Fatalf("MatchRuntime(%q): %v", tt.path, err)
+			}
+			if r.Name() != tt.expected {
+				t.Fatalf("MatchRuntime(%q) = %q, expected %q", tt.path, r.Name(), tt.expected)
+			}
+		})
+	}
+}

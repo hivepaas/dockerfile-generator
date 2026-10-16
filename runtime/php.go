@@ -76,13 +76,14 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 	} else if _, err := os.Stat(filepath.Join(path, "yarn.lock")); err == nil {
 		packageManager = "yarn"
 		npmInstallCMD = "yarn --frozen-lockfile"
-	} else if _, err := os.Stat(filepath.Join(path, "bun.lockb")); err == nil {
+	} else if hasBunLock(path) {
+		// The build's image has Node.js, not Bun
 		packageManager = "bun"
-		npmInstallCMD = "bun install"
+		npmInstallCMD = "npm i -g bun && bun install"
 	}
 
 	if npmInstallCMD != "" {
-		d.Log.Info("Detected package-lock.json, pnpm-lock.yaml, yarn.lock or bun.lockb file")
+		d.Log.Info("Detected package-lock.json, pnpm-lock.yaml, yarn.lock, bun.lock or bun.lockb file")
 		if installCMD == "" {
 			installCMD = npmInstallCMD
 		} else {
@@ -176,7 +177,9 @@ ARG APT_EXTRA_PKGS=
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
-	
+# PHP's production settings: errors are logged, not shown to the visitor
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
 ENV PORT=8080
 EXPOSE ${PORT}
 RUN sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
@@ -278,6 +281,17 @@ func findPHPVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	return &version, nil
+}
+
+// hasBunLock tells whether a project has Bun's lockfile: bun.lock, or bun.lockb
+// before Bun 1.2.
+func hasBunLock(path string) bool {
+	for _, name := range []string{"bun.lock", "bun.lockb"} {
+		if _, err := os.Stat(filepath.Join(path, name)); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 var gteVersionRe = regexp.MustCompile(`^>=\s*([\d.]+)`)
