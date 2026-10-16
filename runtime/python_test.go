@@ -103,7 +103,7 @@ func TestPythonGenerateDockerfile(t *testing.T) {
 			path: "../testdata/python-poetry",
 			expected: []any{
 				`ARG PYTHON_VERSION=3.8.5`,
-				`ARG INSTALL_CMD="pip install poetry && poetry install --no-dev --no-ansi --no-root"`,
+				`ARG INSTALL_CMD="pip install poetry && poetry install --only main --no-ansi --no-root"`,
 				`ARG START_CMD="python app/main.py"`,
 			},
 		},

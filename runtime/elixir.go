@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -91,7 +92,8 @@ ARG ELIXIR_VERSION={{.ElixirVersion}}
 ARG OTP_VERSION={{.OTPVersion}}
 ARG BUILDER=docker.io/library/elixir
 ARG RUNNER=docker.io/library/debian:stable-slim
-FROM ${BUILDER}:${ELIXIR_VERSION}-otp-${OTP_VERSION}-slim AS build
+# Without OTP_VERSION, the Elixir image's own OTP
+FROM ${BUILDER}:${ELIXIR_VERSION}${OTP_VERSION:+-otp-${OTP_VERSION}}-slim AS build
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y build-essential git \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
@@ -99,30 +101,30 @@ RUN apt-get update -y && apt-get install -y build-essential git \
 ENV MIX_ENV=prod
 RUN mix local.hex --force && mix local.rebar --force
 
-COPY mix.exs mix.lock ./
+# A file or directory in [brackets] is optional: one a project does not have
+# is not copied
+COPY mix.exs mix.loc[k] ./
 RUN --mount=type=cache,target=/root/.hex \
     --mount=type=cache,target=/root/.mix/archives \
     mix deps.get --only $MIX_ENV
 RUN mkdir config
 
-COPY config/config.exs config/${MIX_ENV}.exs config/
+COPY confi[g] config
 RUN --mount=type=cache,target=/root/.hex \
     --mount=type=cache,target=/root/.mix/archives \
     mix deps.compile
 
-COPY priv priv
+COPY pri[v] priv
 COPY lib lib
-COPY assets assets
-RUN mix assets.deploy 
+COPY asset[s] assets
+RUN if [ -d assets ]; then mix assets.deploy; fi
 RUN mix compile
-
-COPY config/runtime.exs config/
 RUN mix release
 
 FROM ${RUNNER} AS runtime
 WORKDIR /app
 ARG APT_EXTRA_PKGS=
-RUN apt-get update && apt-get install -y --no-install-recommends wget libstdc++6 openssl libncurses5 locales ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
+RUN apt-get update && apt-get install -y --no-install-recommends wget libstdc++6 openssl libncurses6 locales ca-certificates ${APT_EXTRA_PKGS} && apt-get clean && rm -f /var/lib/apt/lists/*_*
 RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 
@@ -155,6 +157,7 @@ func findElixirVersion(path string, log *slog.Logger) (*string, error) {
 	versionFiles := []string{
 		".tool-versions",
 		".elixir-version",
+		"mix.exs",
 	}
 
 	for _, file := range versionFiles {
@@ -197,6 +200,22 @@ func findElixirVersion(path string, log *slog.Logger) (*string, error) {
 
 				if err := scanner.Err(); err != nil {
 					return nil, fmt.Errorf("Failed to read .elixir-version file")
+				}
+
+			case "mix.exs":
+				// The version the project requires, "~> 1.18": the image of
+				// 1.18 has its latest release
+				scanner := bufio.NewScanner(f)
+				for scanner.Scan() {
+					if m := mixElixirVersionRe.FindStringSubmatch(scanner.Text()); m != nil {
+						version = m[1]
+						log.Info("Detected Elixir version in mix.exs: " + version)
+						break
+					}
+				}
+
+				if err := scanner.Err(); err != nil {
+					return nil, fmt.Errorf("Failed to read mix.exs file")
 				}
 			}
 
@@ -292,8 +311,7 @@ func findOTPVersion(path string, log *slog.Logger) (*string, error) {
 	}
 
 	if version == "" {
-		version = "26.2.5"
-		log.Info(fmt.Sprintf("No Erlang version detected. Using: %s", version))
+		log.Info("No Erlang version detected. Using the Elixir image's")
 	}
 
 	return &version, nil
@@ -303,6 +321,8 @@ func isPhoenixProject(path string) bool {
 	_, err := os.Stat(filepath.Join(path, "config/config.exs"))
 	return err == nil
 }
+
+var mixElixirVersionRe = regexp.MustCompile(`^\s*elixir:\s*"\s*(?:~>|>=|==)?\s*(\d+\.\d+)`)
 
 func findBinName(path string) (string, error) {
 	if _, err := os.Stat(filepath.Join(path, "mix.exs")); err != nil {

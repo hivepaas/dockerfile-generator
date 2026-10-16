@@ -61,7 +61,7 @@ func TestPHPGenerateDockerfile(t *testing.T) {
 		{
 			name:     "PHP project with composer",
 			path:     "../testdata/php-composer",
-			expected: []any{`ARG PHP_VERSION=5.3`, `ARG INSTALL_CMD="composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
+			expected: []any{`ARG PHP_VERSION=5.3`, `ARG INSTALL_CMD="composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"`, regexp.MustCompile(`^ARG BUILD_CMD=$`), `ARG START_CMD="apache2-foreground`},
 		},
 		{
 			name:     "PHP project with NPM",

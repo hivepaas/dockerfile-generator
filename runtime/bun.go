@@ -152,7 +152,7 @@ FROM ${BUILDER}:${BUN_VERSION} AS base
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock* bunfig.toml* ./
 ARG INSTALL_CMD="bun install"
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; fi

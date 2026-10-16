@@ -63,9 +63,14 @@ func TestElixirGenerateDockerfile(t *testing.T) {
 			expected: []any{`ARG ELIXIR_VERSION=1.11`, `ARG OTP_VERSION=23`, `ARG BIN_NAME=hello`},
 		},
 		{
+			name:     "Elixir project with its version in mix.exs",
+			path:     "../testdata/elixir-mix",
+			expected: []any{`ARG ELIXIR_VERSION=1.18`, regexp.MustCompile(`^ARG OTP_VERSION=$`), `ARG BIN_NAME=hello`},
+		},
+		{
 			name:     "Not a Elixir project",
 			path:     "../testdata/deno",
-			expected: []any{`ARG ELIXIR_VERSION=1.17`, `ARG OTP_VERSION=26`, regexp.MustCompile(`^ARG BIN_NAME=$`)},
+			expected: []any{`ARG ELIXIR_VERSION=1.17`, regexp.MustCompile(`^ARG OTP_VERSION=$`), regexp.MustCompile(`^ARG BIN_NAME=$`)},
 		},
 	}
 

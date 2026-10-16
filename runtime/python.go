@@ -74,7 +74,7 @@ func (d *Python) GenerateDockerfile(path string, data ...map[string]string) ([]b
 		packageManager = PythonPackageManagerUv
 	} else if _, err := os.Stat(filepath.Join(path, "poetry.lock")); err == nil {
 		d.Log.Info("Detected a poetry project")
-		installCMD = "pip install poetry && poetry install --no-dev --no-ansi --no-root"
+		installCMD = "pip install poetry && poetry install --only main --no-ansi --no-root"
 		packageManager = PythonPackageManagerPoetry
 	} else if _, err := os.Stat(filepath.Join(path, "Pipfile.lock")); err == nil {
 		d.Log.Info("Detected a pipenv project")

@@ -132,10 +132,10 @@ func detectCppBuildCmd(path string, log *slog.Logger) string {
 }
 
 var cppTemplate = strings.TrimSpace(`
-ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/alpine:latest
 ARG RUNNER=docker.io/library/alpine:latest
-FROM --platform=${BUILDPLATFORM} ${BUILDER} AS build
+# Built on the platform the image is for: the compilers here do not cross-compile
+FROM ${BUILDER} AS build
 WORKDIR /src
 
 RUN apk add --no-cache build-base cmake ninja git clang

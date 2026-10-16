@@ -146,10 +146,11 @@ func (d *Node) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 
 	var buf bytes.Buffer
 	templateData := map[string]string{
-		"Version":    *version,
-		"InstallCMD": safeCommand(installCMD),
-		"BuildCMD":   safeCommand(buildCMD),
-		"StartCMD":   safeCommand(startCMD),
+		"Version":        *version,
+		"PackageManager": packageManager,
+		"InstallCMD":     safeCommand(installCMD),
+		"BuildCMD":       safeCommand(buildCMD),
+		"StartCMD":       safeCommand(startCMD),
 	}
 	if len(data) > 0 {
 		maps.Copy(templateData, data[0])
@@ -177,7 +178,9 @@ ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
 ARG RUNNER=${BUILDER}:${NODE_VERSION}-slim
 FROM ${RUNNER} AS base
-RUN corepack enable
+# pnpm and Yarn run through Corepack, which Node.js 25 and later no longer include
+RUN (command -v corepack >/dev/null 2>&1 || npm install -g --no-fund --no-audit corepack) && corepack enable
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 FROM base AS deps
 WORKDIR /app
@@ -214,6 +217,9 @@ COPY --chown=nonroot:nonroot --from=builder /app .
 # To run as root instead, pass build arg: --build-arg USER=root
 ARG USER=nonroot:nonroot
 USER ${USER}
+# pnpm and Yarn are fetched now, not each time the app starts
+ARG PACKAGE_MANAGER={{.PackageManager}}
+RUN case "${PACKAGE_MANAGER}" in pnpm|yarn) "${PACKAGE_MANAGER}" --version >/dev/null ;; esac
 
 ENV PORT=8080
 EXPOSE ${PORT}

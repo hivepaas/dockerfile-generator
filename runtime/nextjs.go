@@ -111,19 +111,21 @@ ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
 ARG RUNNER=${BUILDER}:${NODE_VERSION}-slim
 FROM ${RUNNER} AS base
+# pnpm and Yarn run through Corepack, which Node.js 25 and later no longer include
+RUN (command -v corepack >/dev/null 2>&1 || npm install -g --no-fund --no-audit corepack) && corepack enable
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lock* ./
 RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/root/.local/share/pnpm/store \
     --mount=type=cache,target=/usr/local/share/.cache/yarn \
     {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
   else echo "Lockfile not found." && exit 1; \
   fi
@@ -142,7 +144,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN --mount=type=cache,target=/app/.next/cache \
     {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
   fi
@@ -185,21 +187,23 @@ CMD HOSTNAME="0.0.0.0" node server.js
 `)
 
 var nextJSServerTemplate = strings.TrimSpace(`
-ARG NODE_VERSION=lts
+ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
 ARG RUNNER=${BUILDER}:${NODE_VERSION}-slim
 FROM ${RUNNER} AS base
+# pnpm and Yarn run through Corepack, which Node.js 25 and later no longer include
+RUN (command -v corepack >/dev/null 2>&1 || npm install -g --no-fund --no-audit corepack) && corepack enable
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lock* ./
 RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/root/.local/share/pnpm/store \
     --mount=type=cache,target=/usr/local/share/.cache/yarn \
     {{.InstallMounts}}if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
   else echo "Lockfile not found." && exit 1; \
   fi
@@ -213,7 +217,7 @@ COPY . .
 RUN --mount=type=cache,target=/app/.next/cache \
     {{.BuildMounts}}if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
   fi

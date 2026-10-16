@@ -102,20 +102,23 @@ func (d *Rust) GenerateDockerfile(path string, data ...map[string]string) ([]byt
 }
 
 var rustlangTemplate = strings.TrimSpace(`
-ARG BUILDPLATFORM=linux
 ARG BUILDER=docker.io/messense/cargo-zigbuild
 ARG RUNNER=docker.io/library/debian:stable-slim
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:latest AS build
 WORKDIR /app
 COPY . .
 
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-RUN if [ "${TARGETARCH}" = "amd64" ]; then rustup target add x86_64-unknown-linux-gnu; else rustup target add aarch64-unknown-linux-gnu; fi
+# The platform the image is built for, which BuildKit sets: the build runs on
+# the builder's own, and cross-compiles for it, to a path that does not depend
+# on the platform.
+ARG TARGETARCH
+ARG BIN_NAME={{.BinName}}
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    if [ "${TARGETARCH}" = "amd64" ]; then cargo zigbuild --release --target x86_64-unknown-linux-gnu; else cargo zigbuild --release --target aarch64-unknown-linux-gnu; fi
+    case "${TARGETARCH}" in arm64) target=aarch64-unknown-linux-gnu ;; *) target=x86_64-unknown-linux-gnu ;; esac \
+    && rustup target add "${target}" \
+    && cargo zigbuild --release --target "${target}" \
+    && cp "target/${target}/release/${BIN_NAME}" /app_bin
 
 FROM ${RUNNER} AS runtime
 WORKDIR /app
@@ -126,9 +129,7 @@ RUN update-ca-certificates 2>/dev/null || true
 RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 RUN chown -R nonroot:nonroot /app
 
-ARG BIN_NAME={{.BinName}}
-ENV BIN_NAME=${BIN_NAME}
-COPY --chown=nonroot:nonroot --from=build /app/target/*/release/${BIN_NAME} ./app
+COPY --chown=nonroot:nonroot --from=build /app_bin ./app
 
 # To run as root instead, pass build arg: --build-arg USER=root
 ARG USER=nonroot:nonroot

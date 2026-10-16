@@ -52,10 +52,17 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 	}
 
 	startCMD := "apache2-foreground"
+	// A framework's front controller is public/index.php: the code beside it is not
+	// to be served
+	documentRoot := "/var/www/html"
+	if _, err := os.Stat(filepath.Join(path, "public", "index.php")); err == nil {
+		d.Log.Info("Detected public/index.php: serving public/")
+		documentRoot = "/var/www/html/public"
+	}
 	installCMD := ""
 	if _, err := os.Stat(filepath.Join(path, "composer.json")); err == nil {
 		d.Log.Info("Detected composer.json file")
-		installCMD = "composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"
+		installCMD = "composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction"
 	}
 
 	packageManager := ""
@@ -130,10 +137,11 @@ func (d *PHP) GenerateDockerfile(path string, data ...map[string]string) ([]byte
 
 	var buf bytes.Buffer
 	templateData := map[string]string{
-		"Version":    *version,
-		"InstallCMD": safeCommand(installCMD),
-		"BuildCMD":   safeCommand(buildCMD),
-		"StartCMD":   safeCommand(startCMD),
+		"Version":      *version,
+		"DocumentRoot": documentRoot,
+		"InstallCMD":   safeCommand(installCMD),
+		"BuildCMD":     safeCommand(buildCMD),
+		"StartCMD":     safeCommand(startCMD),
 	}
 	if len(data) > 0 {
 		maps.Copy(templateData, data[0])
@@ -151,6 +159,8 @@ ARG BUILDER=docker.io/library/composer
 ARG RUNNER=docker.io/library/php:${PHP_VERSION}-apache
 FROM ${BUILDER}:lts as build
 RUN apk add --no-cache nodejs npm
+# pnpm and Yarn run through Corepack, which Alpine's Node.js does not include
+RUN npm install -g --no-fund --no-audit corepack && corepack enable
 WORKDIR /app
 COPY . .
 
@@ -170,6 +180,17 @@ RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 ENV PORT=8080
 EXPOSE ${PORT}
 RUN sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+ARG DOCUMENT_ROOT={{.DocumentRoot}}
+ENV APACHE_DOCUMENT_ROOT=${DOCUMENT_ROOT}
+# The site is served from APACHE_DOCUMENT_ROOT, with .htaccess's rewrites; dot
+# files (.env), Composer's files and vendor/ are not served
+RUN sed -i 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf \
+    && a2enmod rewrite \
+    && printf '%s\n' \
+        'RedirectMatch 404 "/\.(?!well-known/)"' \
+        '<Directory /var/www/html/vendor>' '    Require all denied' '</Directory>' \
+        '<FilesMatch "^(composer\.(json|lock)|auth\.json)$">' '    Require all denied' '</FilesMatch>' \
+        > /etc/apache2/conf-enabled/hivepaas-hidden.conf
 COPY --from=build --chown=nonroot:nonroot /app /var/www/html
 
 # To run as root instead, pass build arg: --build-arg USER=root

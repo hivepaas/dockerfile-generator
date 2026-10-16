@@ -66,7 +66,7 @@ func (d *Golang) GenerateDockerfile(path string, data ...map[string]string) ([]b
 			for _, item := range items {
 				if !item.IsDir() {
 					if item.Name() == "main.go" {
-						pkg = "./" + filepath.Join("cmd", item.Name())
+						pkg = "./cmd"
 						break
 					}
 
@@ -81,7 +81,8 @@ func (d *Golang) GenerateDockerfile(path string, data ...map[string]string) ([]b
 
 	if pkg == "" {
 		if _, err := os.Stat(filepath.Join(path, "main.go")); err == nil {
-			pkg = "./main.go"
+			// The package, not main.go alone: its code is often in more than one file
+			pkg = "."
 		}
 	}
 
@@ -103,7 +104,6 @@ func (d *Golang) GenerateDockerfile(path string, data ...map[string]string) ([]b
 
 var golangTemplate = strings.TrimSpace(`
 ARG GO_VERSION={{.Version}}
-ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/golang
 ARG RUNNER=docker.io/library/alpine:latest
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:${GO_VERSION}-alpine AS base
@@ -113,10 +113,10 @@ FROM base AS deps
 WORKDIR /go/src/app
 COPY go.mod* go.sum* ./
 # GOPROXY is used to specify the module proxy to use.
-ARG GOPROXY=direct
+ARG GOPROXY=https://proxy.golang.org,direct
 ENV GOPROXY=${GOPROXY}
 RUN --mount=type=cache,target=/go/pkg/mod \
-    if [ -f go.mod ]; then go mod download && go mod tidy; fi
+    if [ -f go.mod ]; then go mod download; fi
 
 FROM deps AS build
 WORKDIR /go/src/app
@@ -124,8 +124,10 @@ WORKDIR /go/src/app
 COPY . .
 
 ARG PACKAGE={{.Package}}
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+# The platform the image is built for, which BuildKit sets: the build runs on
+# the builder's own, and compiles for it
+ARG TARGETOS
+ARG TARGETARCH
 ARG CGO_ENABLED=0
 RUN if [ "${CGO_ENABLED}" = "1" ]; then apk add --no-cache build-base; fi
 # -trimpath removes the absolute path to the source code in the binary

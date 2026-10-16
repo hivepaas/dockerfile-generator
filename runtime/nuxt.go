@@ -131,11 +131,12 @@ ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
 ARG RUNNER=${BUILDER}:${NODE_VERSION}-slim
 FROM ${RUNNER} AS base
-RUN corepack enable
+# pnpm and Yarn run through Corepack, which Node.js 25 and later no longer include
+RUN (command -v corepack >/dev/null 2>&1 || npm install -g --no-fund --no-audit corepack) && corepack enable
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lock* ./
 ARG INSTALL_CMD=
 RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -143,7 +144,7 @@ RUN --mount=type=cache,target=/root/.npm \
     {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; \
   elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
   else npm ci; fi
 
@@ -161,7 +162,7 @@ RUN --mount=type=cache,target=/app/.nuxt \
     {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; \
   elif [ -f yarn.lock ]; then yarn build; \
   elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else npm run build; fi
 
@@ -201,9 +202,10 @@ ARG NODE_VERSION={{.Version}}
 ARG BUILDER=docker.io/library/node
 ARG RUNNER=docker.io/joseluisq/static-web-server:2-debian
 FROM ${BUILDER}:${NODE_VERSION}-slim AS deps
-RUN corepack enable
+# pnpm and Yarn run through Corepack, which Node.js 25 and later no longer include
+RUN (command -v corepack >/dev/null 2>&1 || npm install -g --no-fund --no-audit corepack) && corepack enable
 WORKDIR /app
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* bun.lock* ./
 ARG INSTALL_CMD=
 RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -211,7 +213,7 @@ RUN --mount=type=cache,target=/root/.npm \
     {{.InstallMounts}}if [ ! -z "${INSTALL_CMD}" ]; then sh -c "$INSTALL_CMD"; \
   elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun install; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
   else npm ci; fi
 
@@ -228,7 +230,7 @@ RUN --mount=type=cache,target=/app/.nuxt \
     {{.BuildMounts}}if [ ! -z "${BUILD_CMD}" ]; then sh -c "$BUILD_CMD"; \
   elif [ -f yarn.lock ]; then yarn generate; \
   elif [ -f package-lock.json ]; then npm run generate; \
-  elif [ -f bun.lockb ]; then npm i -g bun && bun run generate; \
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun run generate; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run generate; \
   else npm run generate; fi
 

@@ -364,13 +364,14 @@ Detected in order of precedence:
   - `.elixir-version` - `{VERSION}`
   - `.erlang-version` - `{VERSION}`
   - `.mise.toml` - `erlang = "{VERSION}"`
+  - `mix.exs` - `elixir: "~> {VERSION}"`
 
 #### Runtime Image
 `debian:stable-slim`
 
 #### Build Args
   - `ELIXIR_VERSION` - The version of Elixir to install (default: `1.17`)
-  - `OTP_VERSION` - The version of Erlang to install (default: `26.2.5`)
+  - `OTP_VERSION` - The major version of Erlang to install (default: the Elixir image's)
   - `BIN_NAME` - The name of the release binary (default: detected via app name in `mix.exs`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
@@ -398,21 +399,21 @@ Detected in order of precedence:
 
 #### Build Args
   - `GO_VERSION` - The version of Go to install (default: `1.24`)
-  - `TARGETOS` - The target OS for the build (default: `linux`)
-  - `TARGETARCH` - The target architecture for the build (default: `amd64`)
+  - `TARGETOS`, `TARGETARCH` - The platform to build for (default: the image's, which BuildKit sets)
   - `CGO_ENABLED` - Enable CGO for the build (default: `0`)
-  - `GOPROXY` - The Go module proxy to use (default: `direct`)
+  - `GOPROXY` - The Go module proxy to use (default: `https://proxy.golang.org,direct`)
   - `PACKAGE` - The package to compile e.g. `./cmd/http` (default: detected via `cmd` directory or `main.go`)
   - `RUNNER` - The base runtime image (default: `docker.io/library/alpine:latest`)
   - `APK_EXTRA_PKGS` - Extra APK packages to install in runtime image (default: empty)
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Package Detection
-  - Find the directory in `cmd` with a `.go` file
-  - `main.go` file in the root directory
+  - `cmd/main.go`: `./cmd`
+  - The first directory in `cmd`: `./cmd/{NAME}`
+  - `main.go` file in the root directory: `.`, the root package
 
 #### Install Command
-`if [ -f go.mod ]; then go mod download && go mod tidy; fi`
+`if [ -f go.mod ]; then go mod download; fi`
 
 #### Build Command
 `CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app "${PACKAGE}"`
@@ -540,7 +541,7 @@ Handled automatically by the static web server serving the `/public` directory.
 ```sh
 if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
 elif [ -f package-lock.json ]; then npm ci; \
-elif [ -f bun.lockb ]; then npm i -g bun && bun install; \
+elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun install; \
 elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
 else echo "Lockfile not found." && exit 1; \
 fi
@@ -549,7 +550,7 @@ fi
 ```sh
 if [ -f yarn.lock ]; then yarn run build; \
 elif [ -f package-lock.json ]; then npm run build; \
-elif [ -f bun.lockb ]; then npm i -g bun && bun run build; \
+elif [ -f bun.lockb ] || [ -f bun.lock ]; then npm i -g bun && bun run build; \
 elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
 else echo "Lockfile not found." && exit 1; \
 fi
@@ -621,6 +622,7 @@ In order of precedence:
 
 #### Build Args
   - `PHP_VERSION` - The version of PHP to install (default: `8.3`)
+  - `DOCUMENT_ROOT` - The directory Apache serves (default: `/var/www/html/public` with `public/index.php`, else `/var/www/html`)
   - `INSTALL_CMD` - The command to install dependencies (default: detected via source code)
   - `BUILD_CMD` - The command to build the project (default: detected via source code)
   - `START_CMD` - The command to start the project (default: `apache2-foreground`)
@@ -629,14 +631,14 @@ In order of precedence:
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
-- If Composer: `composer update && composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`
+- If Composer: `composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction`, from `composer.lock`
 - If `package.json` exists: composer install command + see Node.js install command
 
 #### Build Command
 - If `package.json` exists: see Node.js build command
 
 #### Start Command
-`apache2-foreground`
+`apache2-foreground`, with `mod_rewrite`. Dot files (`.env`), `composer.json`, `composer.lock`, `auth.json` and `vendor/` are not served.
 
 ---
 
@@ -678,7 +680,7 @@ In order of precedence:
   - `USER` - The user to run the application as (default: `nonroot:nonroot`, or `root`)
 
 #### Install Command
-- If Poetry: `pip install poetry && poetry install --no-dev --no-ansi --no-root`
+- If Poetry: `pip install poetry && poetry install --only main --no-ansi --no-root`
 - If Pipenv: `pipenv install --dev --system --deploy`
 - If uv: `pip install uv && uv sync --python-preference=only-system --no-cache --no-dev`
 - If PDM: `pip install pdm && pdm install --prod`
@@ -797,8 +799,7 @@ Otherwise: `pak::pak("plumber")` or `pak::pak("shiny")`
 `debian:stable-slim`
 
 #### Build Args
-  - `TARGETOS` - The target OS for the build (default: `linux`)
-  - `TARGETARCH` - The target architecture for the build (default: `amd64`)
+  - `TARGETOS`, `TARGETARCH` - The platform to build for (default: the image's, which BuildKit sets)
   - `BIN_NAME` - The name of the release binary (default: detected via `Cargo.toml`)
   - `RUNNER` - The base runtime image (default: `docker.io/library/debian:stable-slim`)
   - `APT_EXTRA_PKGS` - Extra APT packages to install in runtime image (default: empty)
